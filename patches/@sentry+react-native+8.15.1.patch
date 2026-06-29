@@ -1,0 +1,48 @@
+diff --git a/node_modules/@sentry/react-native/dist/js/integrations/reactnativeerrorhandlersutils.js b/node_modules/@sentry/react-native/dist/js/integrations/reactnativeerrorhandlersutils.js
+index 6e8ba31..8a71440 100644
+--- a/node_modules/@sentry/react-native/dist/js/integrations/reactnativeerrorhandlersutils.js
++++ b/node_modules/@sentry/react-native/dist/js/integrations/reactnativeerrorhandlersutils.js
+@@ -16,9 +16,13 @@ export function polyfillPromise() {
+         return;
+     }
+     const Promise = getPromisePolyfill();
+-    // As of RN 0.67 only done and finally are used
+-    require('promise/setimmediate/done');
+-    require('promise/setimmediate/finally');
++    try {
++        require('promise/setimmediate/done');
++        require('promise/setimmediate/finally');
++    } catch {
++        debug.log('[Sentry] promise package not available, skipping polyfill on RN 0.81+');
++        return;
++    }
+     ReactNativeLibraries.Utilities.polyfillGlobal('Promise', () => Promise);
+ }
+ /**
+@@ -26,14 +30,23 @@ export function polyfillPromise() {
+  * This is important for verifying that the rejected promise tracing will work as expected.
+  */
+ export function getPromisePolyfill() {
+-    // Below, we follow the exact way React Native initializes its promise library, and we globally replace it.
+-    return require('promise/setimmediate/es6-extensions');
++    try {
++        return require('promise/setimmediate/es6-extensions');
++    } catch {
++        debug.log('[Sentry] promise package not available, using native Promise');
++        return RN_GLOBAL_OBJ.Promise;
++    }
+ }
+ /**
+  * Lazy require the rejection tracking module
+  */
+ export function requireRejectionTracking() {
+-    return require('promise/setimmediate/rejection-tracking');
++    try {
++        return require('promise/setimmediate/rejection-tracking');
++    } catch {
++        debug.log('[Sentry] promise rejection tracking not available on RN 0.81+');
++        return { enable: () => {} };
++    }
+ }
+ /**
+  * Checks if the promise is the same one or not, if not it will warn the user

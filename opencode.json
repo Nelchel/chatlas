@@ -1,0 +1,69 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "share": "disabled",
+  "provider": {
+    "infomaniak": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "infomaniak",
+      "options": {
+        "baseURL": "{env:OPENAI_BASE_URL}",
+        "headers": {
+          "X-LLM-Application-Tag": "codegpt",
+          "Authorization": "Bearer {env:OPENAI_API_KEY}"
+        }
+      },
+      "models": {
+        "euria-code": {
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "name": "euria-code",
+          "limit": {
+            "context": 250000,
+            "output": 100000
+          },
+          "cost": {
+            "input": 0.6,
+            "output": 3.0
+          }
+        },
+        "euria-code-tiny": {
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "name": "euria-code-tiny",
+          "limit": {
+            "context": 200000,
+            "output": 100000
+          },
+          "cost": {
+            "input": 0.3,
+            "output": 2.4
+          }
+        }
+      }
+    }
+  },
+  "model": "infomaniak/euria-code",
+  "default_agent": "plan",
+  "agent": {
+    "build": {
+      "model": "infomaniak/euria-code",
+    },
+    "plan": {
+      "model": "infomaniak/euria-code"
+    }
+  }
+}

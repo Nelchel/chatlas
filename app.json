@@ -2,7 +2,7 @@
   "expo": {
     "name": "Chatlas",
     "slug": "cat-quest",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -22,14 +22,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.catquest.app",
-      "buildNumber": "6"
+      "buildNumber": "7"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FF8C5A"
       },
       "package": "com.chatlas.app",
-      "versionCode": 6,
+      "versionCode": 7,
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"

@@ -12,6 +12,8 @@ import { db } from "../services/firebase";
 import { AuthProvider, UserProfile } from "../types";
 import { setSentryUser } from "../services/sentry";
 
+import { clearQuestXP } from "../utils/xp";
+
 export type AppUser = {
   id: string;
   username: string;
@@ -126,6 +128,7 @@ export function useAuth() {
   }
 
   async function signOut() {
+    const userId = user?.id;
     const { signOut: firebaseSignOut } = await import("firebase/auth");
     setUser(null);
     if (auth) {
@@ -134,6 +137,9 @@ export function useAuth() {
     await LocalStorage.clearUserData();
     await LocalStorage.setRaw("auth_setup_complete", "false").catch(() => {});
     await LocalStorage.setUsername("").catch(() => {});
+    if (userId) {
+      await clearQuestXP(userId).catch(() => {});
+    }
     signOutListeners.forEach((cb) => cb());
   }
 

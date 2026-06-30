@@ -16,12 +16,14 @@ const XP_SPOTTING = 20;
 const XP_NEW_CITY = 200;
 const XP_NEW_BADGE = 300;
 
-const QUEST_XP_KEY = "@catquest_quest_xp";
+const QUEST_XP_PREFIX = "@catquest_quest_xp";
+
+function getQuestXPKey(userId: string): string {
+  return `${QUEST_XP_PREFIX}_${userId}`;
+}
 
 /**
  * Calcule le niveau à partir du total d'XP
- * Formule : XP pour niveau N = 50 * N * (N-1)
- * Donc niveau = floor((1 + sqrt(1 + 8*XP/100)) / 2)
  */
 export function calculateLevelInfo(totalXP: number): LevelInfo {
   const level = Math.floor((1 + Math.sqrt(1 + (8 * totalXP) / 100)) / 2);
@@ -45,18 +47,26 @@ export function calculateLevelInfo(totalXP: number): LevelInfo {
 
 /**
  * Ajoute de l'XP bonus (quêtes, etc.)
+ * Stockage per-user pour éviter le partage entre comptes
  */
 export async function addXP(userId: string, amount: number): Promise<number> {
-  const raw = await LocalStorage.getRaw<number>(QUEST_XP_KEY);
+  const key = getQuestXPKey(userId);
+  const raw = await LocalStorage.getRaw<number>(key);
   const current = raw || 0;
   const updated = current + amount;
-  await LocalStorage.setRaw(QUEST_XP_KEY, updated);
+  await LocalStorage.setRaw(key, updated);
   return updated;
 }
 
-export async function getBonusXP(): Promise<number> {
-  const raw = await LocalStorage.getRaw<number>(QUEST_XP_KEY);
+export async function getBonusXP(userId?: string): Promise<number> {
+  if (!userId) return 0;
+  const key = getQuestXPKey(userId);
+  const raw = await LocalStorage.getRaw<number>(key);
   return raw || 0;
+}
+
+export async function clearQuestXP(userId: string): Promise<void> {
+  await LocalStorage.removeItem(getQuestXPKey(userId));
 }
 
 /**
@@ -164,7 +174,7 @@ export async function getTotalXPWithBonus(
   userId?: string
 ): Promise<number> {
   const base = calculateTotalXP(cats, sightings, userBadges, userId);
-  const bonus = await getBonusXP();
+  const bonus = await getBonusXP(userId);
   return base + bonus;
 }
 

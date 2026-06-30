@@ -35,6 +35,10 @@ export const LocalStorage = {
     await AsyncStorage.setItem(key, JSON.stringify(data));
   },
 
+  async removeItem(key: string): Promise<void> {
+    await AsyncStorage.removeItem(key);
+  },
+
   async getCats(): Promise<Cat[]> {
     return getItem<Cat>(STORAGE_KEYS.CATS);
   },

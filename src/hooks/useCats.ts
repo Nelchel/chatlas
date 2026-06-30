@@ -90,7 +90,12 @@ export function useCats() {
       }
       const newBadges: UserBadge[] = [];
 
-      const uniqueCities = new Set(allSightings.map((s) => s.location_label).filter((label): label is string => Boolean(label)));
+      // Filtrer par user pour éviter les données d'autres comptes sur le même device
+      const userCats = allCats.filter((c) => c.user_id === userId);
+      const userSightings = allSightings.filter((s) => s.user_id === userId);
+      const userFavs = allFavs.filter((f) => f.user_id === userId);
+
+      const uniqueCities = new Set(userSightings.map((s) => s.location_label).filter((label): label is string => Boolean(label)));
 
       const { currentStreak } = await getStreakData(userId);
 
@@ -99,9 +104,9 @@ export function useCats() {
 
         const unlocked = isBadgeUnlocked(
           badge.criteria,
-          allCats,
-          allSightings,
-          allFavs.length,
+          userCats,
+          userSightings,
+          userFavs.length,
           uniqueCities,
           currentStreak
         );

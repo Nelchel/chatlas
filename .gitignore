@@ -12,3 +12,4 @@ web-build/
 .env
 *.keystore
 google-services.json
+eas.json

@@ -21,6 +21,7 @@ import { QuestsScreen } from "../screens/QuestsScreen";
 import { StatsScreen } from "../screens/StatsScreen";
 import { PublicProfileScreen } from "../screens/PublicProfileScreen";
 import { AuthScreen } from "../screens/AuthScreen";
+import { WelcomeScreen } from "../screens/WelcomeScreen";
 import { UsernameSetupScreen } from "../screens/UsernameSetupScreen";
 
 const AUTH_SETUP_KEY = "auth_setup_complete";
@@ -96,6 +97,7 @@ export function AppNavigator() {
   const [username, setUsername] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [authSetupDone, setAuthSetupDone] = useState(false);
+  const [welcomeDone, setWelcomeDone] = useState(false);
   const [checkingAuthSetup, setCheckingAuthSetup] = useState(true);
 
   const mode = getMode();
@@ -155,6 +157,10 @@ export function AppNavigator() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (mode === "firebase" && !welcomeDone && (!authSetupDone || !user)) {
+    return <WelcomeScreen onContinue={() => setWelcomeDone(true)} />;
   }
 
   if (mode === "firebase" && !authSetupDone) {

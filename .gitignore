@@ -13,3 +13,4 @@ web-build/
 *.keystore
 google-services.json
 eas.json
+.idea/

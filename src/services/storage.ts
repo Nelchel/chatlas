@@ -135,6 +135,12 @@ export const LocalStorage = {
     await setItem(STORAGE_KEYS.USER_BADGES, badges);
   },
 
+  async removeBadge(badgeId: string): Promise<void> {
+    const badges = await this.getUserBadges();
+    const filtered = badges.filter((b) => b.badge_id !== badgeId);
+    await setItem(STORAGE_KEYS.USER_BADGES, filtered);
+  },
+
   async getUsername(): Promise<string | null> {
     return AsyncStorage.getItem(STORAGE_KEYS.USERNAME);
   },

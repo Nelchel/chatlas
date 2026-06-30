@@ -261,6 +261,10 @@ export const BadgeCloud = {
       earnedAt: Timestamp.fromDate(new Date(ub.earned_at)),
     });
   },
+
+  async deleteBadge(badgeId: string): Promise<void> {
+    await deleteDoc(doc(_db(), "userBadges", badgeId));
+  },
 };
 
 export const ActivityCloud = {

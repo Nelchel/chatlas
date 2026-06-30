@@ -80,15 +80,23 @@ export function useCats() {
         setCloudStatus("offline");
       }
 
-      let earnedIds: string[];
+      let existingBadges: UserBadge[];
       if (alreadyEarnedIds) {
-        earnedIds = alreadyEarnedIds;
+        // On a juste les IDs, pas les objets complets
+        existingBadges = alreadyEarnedIds.map((bid) => ({
+          id: uid(),
+          user_id: userId,
+          badge_id: bid,
+          earned_at: new Date().toISOString(),
+        }));
       } else if (isFirebase) {
-        earnedIds = (await BadgeCloud.getAll(userId)).map((b) => b.badge_id);
+        existingBadges = await BadgeCloud.getAll(userId);
       } else {
-        earnedIds = (await LocalStorage.getUserBadges()).map((b) => b.badge_id);
+        existingBadges = await LocalStorage.getUserBadges();
       }
+      const earnedIds = existingBadges.map((b) => b.badge_id);
       const newBadges: UserBadge[] = [];
+      const removedBadges: string[] = [];
 
       // Filtrer par user pour éviter les données d'autres comptes sur le même device
       const userCats = allCats.filter((c) => c.user_id === userId);
@@ -99,8 +107,38 @@ export function useCats() {
 
       const { currentStreak } = await getStreakData(userId);
 
+      // Vérifier les badges existants et supprimer ceux qui ne sont plus valides
       for (const badge of ALL_BADGES) {
-        if (earnedIds.includes(badge.id)) continue;
+        if (earnedIds.includes(badge.id)) {
+          const unlocked = isBadgeUnlocked(
+            badge.criteria,
+            userCats,
+            userSightings,
+            userFavs.length,
+            uniqueCities,
+            currentStreak
+          );
+          if (!unlocked) {
+            removedBadges.push(badge.id);
+            const badgeObj = existingBadges.find((b) => b.badge_id === badge.id);
+            if (badgeObj) {
+              try {
+                if (isFirebase) {
+                  await BadgeCloud.deleteBadge(badgeObj.id);
+                } else {
+                  await LocalStorage.removeBadge(badge.id);
+                }
+              } catch (e) {
+                console.warn("Failed to remove invalid badge:", badge.id, e);
+              }
+            }
+          }
+        }
+      }
+
+      // Vérifier les nouveaux badges
+      for (const badge of ALL_BADGES) {
+        if (earnedIds.includes(badge.id) || removedBadges.includes(badge.id)) continue;
 
         const unlocked = isBadgeUnlocked(
           badge.criteria,
@@ -132,11 +170,20 @@ export function useCats() {
         }
       }
 
-      if (newBadges.length > 0) {
-        setUserBadges((prev) => [...prev, ...newBadges]);
+      if (newBadges.length > 0 || removedBadges.length > 0) {
+        setUserBadges((prev) => {
+          let updated = prev;
+          if (removedBadges.length > 0) {
+            updated = prev.filter((b) => !removedBadges.includes(b.badge_id));
+          }
+          if (newBadges.length > 0) {
+            updated = [...updated, ...newBadges];
+          }
+          return updated;
+        });
       }
 
-      return newBadges;
+      return { newBadges, removedBadges };
     },
     [isFirebase]
   );
@@ -278,13 +325,13 @@ export function useCats() {
           setSightingLikes(dedupById(mergedSightingLikes));
           setSightingComments(dedupById(mergedSightingComments));
           setFollows(dedupById(mergedFollows));
-          const earnedCloudIds = cloudBadges.map((b) => b.badge_id);
+          
+          // Set initial badges from cloud, then let checkBadges clean up invalid ones and add new ones
           const uniqueCloudBadges = Array.from(
             new Map(cloudBadges.map((b) => [b.badge_id, b])).values()
           );
-          const newlyEarned = await checkBadges(currentUser.uid, earnedCloudIds);
-          const mergedBadges = [...uniqueCloudBadges, ...newlyEarned];
-          setUserBadges(mergedBadges);
+          setUserBadges(uniqueCloudBadges);
+          await checkBadges(currentUser.uid);
           setCloudStatus("cloud");
 
           const loadedQuests = await getActiveQuests();
@@ -374,16 +421,12 @@ export function useCats() {
            sightings: dedupById(localSightings),
            comments: dedupById(localSightingComments),
          });
-         await LocalStorage.saveQuests(localEvaluated);
-         setQuests(localEvaluated);
+          await LocalStorage.saveQuests(localEvaluated);
+          setQuests(localEvaluated);
 
-         if (localCats.length > 0) {
-          const earned = await checkBadges("mock_user");
-          if (earned.length > 0) {
-            setUserBadges((prev) => [...prev, ...earned]);
-          }
-        }
-      }
+          // checkBadges handles state updates internally (removes invalid, adds new)
+          await checkBadges("mock_user");
+       }
     } catch (err) {
       console.error("Failed to load data:", err);
     } finally {

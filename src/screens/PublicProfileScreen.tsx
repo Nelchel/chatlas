@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo } from "react";
 import {
   StyleSheet,
   View,
@@ -12,7 +12,7 @@ import { useCats } from "../hooks/useCats";
 import { useAuth } from "../hooks/useAuth";
 import { colors, spacing, borderRadius } from "../constants/theme";
 import { calculateLevelInfo } from "../utils/xp";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 type PublicProfileRouteProp = RouteProp<RootStackParamList, "PublicProfile">;
@@ -36,6 +36,25 @@ export function PublicProfileScreen() {
 
   const isMe = user?.username === username;
   const following = isFollowing(user?.id || "", username);
+
+  const recentActivities = useMemo(() => {
+    return activities
+      .filter((a) => a.username === username)
+      .slice(0, 10);
+  }, [activities, username]);
+
+  function timeAgo(dateStr: string): string {
+    const date = new Date(dateStr);
+    const diff = Date.now() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "à l'instant";
+    if (mins < 60) return `il y a ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `il y a ${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `il y a ${days}j`;
+    return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  }
 
   const stats = useMemo(() => {
     const userActivities = activities.filter((a) => a.username === username);
@@ -159,6 +178,41 @@ export function PublicProfileScreen() {
         <StatRow label="Ville préférée" value={stats.favoriteCity} emoji="📍" />
         <View style={styles.divider} />
         <StatRow label="Rang mondial" value={`#${rank}`} emoji="🥇" />
+      </View>
+
+      {/* Activité récente */}
+      <View style={styles.recentActivitiesSection}>
+        <Text style={styles.sectionTitle}>🕐 Activité récente</Text>
+        
+        {recentActivities.length === 0 ? (
+          <View style={styles.emptyActivity}>
+            <Text style={styles.emptyActivityText}>Aucune activité récente</Text>
+          </View>
+        ) : (
+          <View style={styles.recentActivitiesCard}>
+            {recentActivities.map((a) => (
+              <TouchableOpacity
+                key={a.id}
+                style={styles.activityItem}
+                onPress={() => navigation.navigate("CatDetail", { catId: a.cat_id })}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.activityEmoji}>
+                  {a.type === "discovered" ? "🐱" : "📍"}
+                </Text>
+                <View style={styles.activityText}>
+                  <Text style={styles.activityTitle}>
+                    {a.type === "discovered" 
+                      ? `A découvert ${a.cat_name}` 
+                      : `A revu ${a.cat_name}`}
+                  </Text>
+                  <Text style={styles.activityTime}>{timeAgo(a.created_at)}</Text>
+                </View>
+                <Text style={styles.activityChevron}>›</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -314,5 +368,66 @@ const styles = StyleSheet.create({
   },
   followingButtonText: {
     color: colors.primary,
+  },
+  recentActivitiesSection: {
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
+  },
+  recentActivitiesCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  activityItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  activityEmoji: {
+    fontSize: 18,
+    width: 32,
+    textAlign: "center",
+  },
+  activityText: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  activityTitle: {
+    fontSize: 15,
+    color: colors.text,
+    fontWeight: "600",
+  },
+  activityTime: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  activityChevron: {
+    fontSize: 20,
+    color: colors.textSecondary,
+    marginLeft: spacing.md,
+  },
+  emptyActivity: {
+    alignItems: "center",
+    paddingVertical: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+  },
+  emptyActivityText: {
+    fontSize: 14,
+    color: colors.textSecondary,
   },
 });

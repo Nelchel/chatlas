@@ -18,8 +18,35 @@ import { calculateLevelInfo } from "../utils/xp";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Lundi comme premier jour
+  d.setDate(diff);
+  return d;
+}
+
+function getMonthStart(date: Date): Date {
+  const d = new Date(date);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function isThisWeek(date: Date): boolean {
+  const weekStart = getWeekStart(new Date());
+  return date >= weekStart;
+}
+
+function isThisMonth(date: Date): boolean {
+  const monthStart = getMonthStart(new Date());
+  return date >= monthStart;
+}
+
 type Scope = "monde" | "pays" | "region" | "ville";
 type Metric = "observations" | "chats" | "badges" | "xp";
+type Period = "tout" | "hebdo" | "mensuel";
 
 export function LeaderboardScreen() {
   const { activities, loading, refresh, followUser, unfollowUser, isFollowing, cats, sightings } = useCats();
@@ -28,6 +55,7 @@ export function LeaderboardScreen() {
   const [, forceUpdate] = useState(0);
   const [scope, setScope] = useState<Scope>("monde");
   const [metric, setMetric] = useState<Metric>("observations");
+  const [period, setPeriod] = useState<Period>("tout");
 
   useFocusEffect(
     useCallback(() => {
@@ -36,6 +64,14 @@ export function LeaderboardScreen() {
   );
 
   const rankings = useMemo(() => {
+    // Filtrer les activités selon la période
+    let filteredActivities = activities;
+    if (period === "hebdo") {
+      filteredActivities = activities.filter((a) => isThisWeek(new Date(a.created_at)));
+    } else if (period === "mensuel") {
+      filteredActivities = activities.filter((a) => isThisMonth(new Date(a.created_at)));
+    }
+
     // On agrège par username depuis les activities et sightings
     const userStats = new Map<string, {
       username: string;
@@ -47,7 +83,7 @@ export function LeaderboardScreen() {
     }>();
 
     // Stats depuis activities (qui ont les usernames)
-    for (const a of activities) {
+    for (const a of filteredActivities) {
       let s = userStats.get(a.username);
       if (!s) {
         s = {
@@ -116,7 +152,7 @@ export function LeaderboardScreen() {
     }
 
     return result;
-  }, [activities, metric]);
+  }, [activities, metric, period]);
 
   if (loading) {
     return (
@@ -149,8 +185,16 @@ export function LeaderboardScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerEmoji}>🏆</Text>
-        <Text style={styles.title}>Classement</Text>
-        <Text style={styles.subtitle}>Les chasseur·euses les plus actif·ves</Text>
+        <Text style={styles.title}>
+          Classement {period === "hebdo" ? "Hebdo" : period === "mensuel" ? "Mensuel" : ""}
+        </Text>
+        <Text style={styles.subtitle}>
+          {period === "hebdo"
+            ? "Les plus actifs cette semaine"
+            : period === "mensuel"
+            ? "Les plus actifs ce mois-ci"
+            : "Les chasseur·euses les plus actif·ves"}
+        </Text>
       </View>
 
       {/* Filtres géographiques */}
@@ -201,11 +245,34 @@ export function LeaderboardScreen() {
         </ScrollView>
       </View>
 
+      {/* Filtres de période */}
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>📅 Période</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+          {([
+            { key: "tout", label: "Tout" },
+            { key: "hebdo", label: "Hebdomadaire" },
+            { key: "mensuel", label: "Mensuel" },
+          ] as { key: Period; label: string }[]).map((p) => (
+            <TouchableOpacity
+              key={p.key}
+              style={[styles.periodChip, period === p.key && styles.periodChipActive]}
+              onPress={() => setPeriod(p.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.periodChipText, period === p.key && styles.periodChipTextActive]}>
+                {p.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       {/* Note pour scopes non-monde */}
       {scope !== "monde" && (
         <View style={styles.scopeNotice}>
           <Text style={styles.scopeNoticeText}>
-            🌍 Les filtres géographiques arrivent bientôt. Pour l'instant : classement mondial.
+            🌍 Les filtres géographiques arrivent bientôt. Pour l&apos;instant : classement mondial.
           </Text>
         </View>
       )}
@@ -255,7 +322,7 @@ export function LeaderboardScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>📭</Text>
-            <Text style={styles.emptyText}>Encore personne n'a chassé</Text>
+            <Text style={styles.emptyText}>Encore personne n&apos;a chassé</Text>
           </View>
         }
         contentContainerStyle={rankings.length === 0 ? styles.emptyContainer : styles.list}
@@ -352,6 +419,28 @@ const styles = StyleSheet.create({
   },
   metricChipTextActive: {
     color: colors.text,
+    fontWeight: "700",
+  },
+  periodChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
+    marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  periodChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  periodChipText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  periodChipTextActive: {
+    color: "#FFF",
     fontWeight: "700",
   },
   scopeNotice: {

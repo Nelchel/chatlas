@@ -29,10 +29,16 @@ function timeAgo(date: Date): string {
 }
 
 function ActivityIcon({ type }: { type: string }) {
-  const icon = type === "discovered" ? "🐱" : "📍";
+  const config = {
+    discovered: { icon: "🐱", color: colors.primary },
+    spotted: { icon: "📍", color: colors.secondary },
+    badge_earned: { icon: "🏅", color: "#FFD700" },
+    quest_completed: { icon: "🎯", color: "#FF6B6B" },
+  }[type] || { icon: "✨", color: colors.text };
+
   return (
-    <View style={styles.iconCircle}>
-      <Text style={styles.iconEmoji}>{icon}</Text>
+    <View style={[styles.iconCircle, { backgroundColor: config.color + "20" }]}>
+      <Text style={styles.iconEmoji}>{config.icon}</Text>
     </View>
   );
 }
@@ -55,7 +61,56 @@ export function ActivityFeedScreen() {
     return activities.filter((a) => a.username === user?.username || following.includes(a.username));
   }, [activities, filter, getFollowing, user]);
 
-  // Calculer les rangs de tous les utilisateurs à partir des activités
+  const feedStats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 7);
+    
+    const todayCount = activities.filter(a => new Date(a.created_at) >= today).length;
+    const weekCount = activities.filter(a => new Date(a.created_at) >= weekAgo).length;
+    const activeUsers = new Set(activities.map(a => a.username)).size;
+    const uniqueCats = new Set(activities.map(a => a.cat_id)).size;
+    
+    return { todayCount, weekCount, activeUsers, uniqueCats };
+  }, [activities]);
+
+  const groupedActivities = useMemo(() => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 7);
+    const monthAgo = new Date(today);
+    monthAgo.setMonth(today.getMonth() - 1);
+
+    const groups: Record<string, typeof filteredActivities> = {
+      "Aujourd'hui": [],
+      "Hier": [],
+      "Cette semaine": [],
+      "Ce mois-ci": [],
+      "Plus tôt": [],
+    };
+
+    for (const a of filteredActivities) {
+      const d = new Date(a.created_at);
+      d.setHours(0,0,0,0);
+      if (d.getTime() === today.getTime()) {
+        groups["Aujourd'hui"].push(a);
+      } else if (d.getTime() === yesterday.getTime()) {
+        groups["Hier"].push(a);
+      } else if (d >= weekAgo) {
+        groups["Cette semaine"].push(a);
+      } else if (d >= monthAgo) {
+        groups["Ce mois-ci"].push(a);
+      } else {
+        groups["Plus tôt"].push(a);
+      }
+    }
+    return groups;
+  }, [filteredActivities]);
+
   const userRanks = useMemo(() => {
     const discovered = new Map<string, { name: string; cats: Set<string> }>();
     const spotted = new Map<string, { name: string; cats: Set<string> }>();
@@ -110,6 +165,28 @@ export function ActivityFeedScreen() {
       <View style={styles.header}>
         <Text style={styles.headerEmoji}>🐱</Text>
         <Text style={styles.headerTitle}>Activité</Text>
+        
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{feedStats.todayCount}</Text>
+            <Text style={styles.statLabel}>Aujourd&apos;hui</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{feedStats.weekCount}</Text>
+            <Text style={styles.statLabel}>Cette semaine</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{feedStats.activeUsers}</Text>
+            <Text style={styles.statLabel}>Chasseurs</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{feedStats.uniqueCats}</Text>
+            <Text style={styles.statLabel}>Chats</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.filterContainer}>
@@ -146,41 +223,49 @@ export function ActivityFeedScreen() {
           )}
         </View>
       ) : (
-        filteredActivities.map((a) => {
-          const rank = userRanks.get(a.username) || 1;
+        Object.entries(groupedActivities).map(([dateGroup, acts]) => {
+          if (acts.length === 0) return null;
           return (
-            <View key={a.id} style={styles.card}>
-              <ActivityIcon type={a.type} />
-              <View style={styles.cardBody}>
-                <View style={styles.cardTextRow}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("PublicProfile", {
-                        username: a.username,
-                        rank,
-                      })
-                    }
-                    activeOpacity={0.6}
-                  >
-                    <Text style={styles.username}>{a.username}</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.actionText}>
-                    {" "}
-                    {a.type === "discovered" ? "a découvert" : "a revu"}{" "}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("CatDetail", { catId: a.cat_id })
-                    }
-                    activeOpacity={0.6}
-                  >
-                    <Text style={styles.catName}>{a.cat_name}</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.cardTime}>
-                  {timeAgo(new Date(a.created_at))}
-                </Text>
-              </View>
+            <View key={dateGroup}>
+              <Text style={styles.dateGroupHeader}>{dateGroup}</Text>
+              {acts.map((a) => {
+                const rank = userRanks.get(a.username) || 1;
+                return (
+                  <View key={a.id} style={styles.card}>
+                    <ActivityIcon type={a.type} />
+                    <View style={styles.cardBody}>
+                      <View style={styles.cardTextRow}>
+                        <TouchableOpacity
+                          onPress={() =>
+                            navigation.navigate("PublicProfile", {
+                              username: a.username,
+                              rank,
+                            })
+                          }
+                          activeOpacity={0.6}
+                        >
+                          <Text style={styles.username}>{a.username}</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.actionText}>
+                          {" "}
+                          {a.type === "discovered" ? "a découvert" : a.type === "spotted" ? "a revu" : a.type === "badge_earned" ? "a obtenu" : a.type === "quest_completed" ? "a accompli" : "a activité"}{" "}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() =>
+                            navigation.navigate("CatDetail", { catId: a.cat_id })
+                          }
+                          activeOpacity={0.6}
+                        >
+                          <Text style={styles.catName}>{a.cat_name}</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.cardTime}>
+                        {timeAgo(new Date(a.created_at))}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           );
         })
@@ -214,6 +299,31 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.text,
   },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: colors.primary,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: colors.border,
+  },
   filterContainer: {
     flexDirection: "row",
     justifyContent: "center",
@@ -241,6 +351,16 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: "#FFF",
+  },
+  dateGroupHeader: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   empty: {
     alignItems: "center",
@@ -271,6 +391,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     padding: spacing.md,
     borderRadius: borderRadius.md,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
   },
   iconCircle: {
     width: 44,

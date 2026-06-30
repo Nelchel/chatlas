@@ -69,10 +69,9 @@ export function CaptureCatScreen() {
   const { user, loading: authLoading } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
 
-  const [step, setStep] = useState<"camera" | "nearby" | "form">("camera");
+  const [step, setStep] = useState<"camera" | "analyzing" | "nearby" | "form">("camera");
   const [photo, setPhoto] = useState<string | null>(null);
   const [nearbyCats, setNearbyCats] = useState<MatchResult[]>([]);
-  const [nearbyLoading, setNearbyLoading] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState("");
   const [sociability, setSociability] = useState("");
@@ -114,7 +113,9 @@ export function CaptureCatScreen() {
       const result = await cameraRef.current.takePictureAsync({ quality: 0.7 });
       if (result?.uri) {
         setPhoto(result.uri);
+        setStep("analyzing"); // 🔄 Feedback immédiat
 
+        // Récupérer la position en parallèle (si pas déjà connue)
         let pos = position;
         if (!pos) {
           const { getCurrentPosition } = await import("../services/location");
@@ -122,7 +123,7 @@ export function CaptureCatScreen() {
           setPosition(pos);
         }
 
-        setNearbyLoading(true);
+        // Analyse proximité + AI
         try {
           const found = getNearbyCats(cats, sightings, pos.latitude, pos.longitude, 100);
           if (found.length > 0) {
@@ -137,13 +138,12 @@ export function CaptureCatScreen() {
           }
         } catch {
           // Nearby check failed — proceed to form
-        } finally {
-          setNearbyLoading(false);
         }
 
         setStep("form");
       }
     } catch {
+      setStep("camera");
       Alert.alert("Erreur", "Impossible de prendre la photo");
     }
   };
@@ -257,7 +257,7 @@ export function CaptureCatScreen() {
       <View style={styles.centered}>
         <Text style={styles.emoji}>📸</Text>
         <Text style={styles.permissionText}>
-          Chatlas a besoin d'accéder à ta caméra pour capturer les chats !
+          Chatlas a besoin d&apos;accéder à ta caméra pour capturer les chats !
         </Text>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
           <Text style={styles.buttonText}>Autoriser la caméra</Text>
@@ -285,6 +285,22 @@ export function CaptureCatScreen() {
             </TouchableOpacity>
           </View>
         </CameraView>
+      </View>
+    );
+  }
+
+  if (step === "analyzing") {
+    return (
+      <View style={styles.container}>
+        <View style={styles.analyzingContainer}>
+          <Image source={{ uri: photo! }} style={styles.analyzingPhoto} />
+          <ActivityIndicator size="large" color={colors.primary} style={styles.analyzingSpinner} />
+          <Text style={styles.analyzingTitle}>🐱 Analyse en cours...</Text>
+          <Text style={styles.analyzingSub}>On cherche si on connaît déjà ce chat dans le coin</Text>
+          <TouchableOpacity style={styles.analyzingSkip} onPress={() => setStep("form")}>
+            <Text style={styles.analyzingSkipText}>Passer directement au formulaire →</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -355,7 +371,7 @@ export function CaptureCatScreen() {
                       {submitting ? (
                         <ActivityIndicator color="#FFF" size="small" />
                       ) : (
-                        <Text style={styles.nearbyButtonText}>C'est lui</Text>
+                        <Text style={styles.nearbyButtonText}>C&apos;est lui</Text>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -409,7 +425,7 @@ export function CaptureCatScreen() {
                       {submitting ? (
                         <ActivityIndicator color="#FFF" size="small" />
                       ) : (
-                        <Text style={styles.nearbyButtonText}>C'est lui</Text>
+                        <Text style={styles.nearbyButtonText}>C&apos;est lui</Text>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -979,5 +995,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: colors.primary,
+  },
+  analyzingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.lg,
+    backgroundColor: colors.background,
+  },
+  analyzingPhoto: {
+    width: 200,
+    height: 200,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+  },
+  analyzingSpinner: {
+    marginBottom: spacing.md,
+  },
+  analyzingTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  analyzingSub: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: spacing.lg,
+  },
+  analyzingSkip: {
+    marginTop: spacing.md,
+  },
+  analyzingSkipText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: "600",
   },
 });

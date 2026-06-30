@@ -152,6 +152,11 @@ function matchesAction(
     }
     case "add_cat": {
       if (quest.category === "count") return true;
+      if (quest.category === "color" && quest.condition?.startsWith("color:")) {
+        const targetColor = quest.condition.split(":")[1].toLowerCase();
+        const catColor = data?.catColor?.toLowerCase() || "";
+        return catColor.includes(targetColor);
+      }
       return false;
     }
     case "add_comment": {

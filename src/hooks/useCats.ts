@@ -92,7 +92,7 @@ export function useCats() {
 
       const uniqueCities = new Set(allSightings.map((s) => s.location_label).filter((label): label is string => Boolean(label)));
 
-      const { currentStreak } = await getStreakData();
+      const { currentStreak } = await getStreakData(userId);
 
       for (const badge of ALL_BADGES) {
         if (earnedIds.includes(badge.id)) continue;
@@ -436,7 +436,7 @@ export function useCats() {
           await checkBadges(newCat.user_id);
           await updateStreak(newCat.user_id).catch(() => {});
           setCloudStatus("cloud");
-          await checkQuestProgress("add_cat", { userId: newCat.user_id }).catch(() => {});
+          await checkQuestProgress("add_cat", { userId: newCat.user_id, catColor: cat.color }).catch(() => {});
           await recordActivity("discovered", cloudCat.id, cloudCat.name || "Chat inconnu", newCat.user_id);
           return cloudCat;
         } else {
@@ -453,7 +453,7 @@ export function useCats() {
       );
       await checkBadges(newCat.user_id).catch(() => {});
       await updateStreak(newCat.user_id).catch(() => {});
-      await checkQuestProgress("add_cat", { userId: newCat.user_id }).catch(() => {});
+      await checkQuestProgress("add_cat", { userId: newCat.user_id, catColor: cat.color }).catch(() => {});
       await recordActivity("discovered", newCat.id, newCat.name || "Chat inconnu", newCat.user_id);
       return newCat;
     },

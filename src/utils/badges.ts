@@ -303,6 +303,10 @@ export async function getDailyBadge(availableBadgeIds: string[]): Promise<DailyB
  */
 const STREAK_KEY = "@catquest_streak";
 
+function getStreakKey(userId: string): string {
+  return `${STREAK_KEY}_${userId}`;
+}
+
 interface StreakData {
   lastActiveDate: string;
   currentStreak: number;
@@ -311,11 +315,12 @@ interface StreakData {
 }
 
 export async function updateStreak(userId: string): Promise<void> {
+  const streakKey = getStreakKey(userId);
   const today = new Date().toISOString().split("T")[0];
   
   let data: StreakData;
   try {
-    const raw = await LocalStorage.getRaw<StreakData>(STREAK_KEY);
+    const raw = await LocalStorage.getRaw<StreakData>(streakKey);
     if (raw) {
       data = raw;
     } else {
@@ -344,12 +349,13 @@ export async function updateStreak(userId: string): Promise<void> {
     data.activityDates.push(today);
   }
 
-  await LocalStorage.setRaw(STREAK_KEY, data);
+  await LocalStorage.setRaw(streakKey, data);
 }
 
-export async function getStreakData(): Promise<{ currentStreak: number; longestStreak: number }> {
+export async function getStreakData(userId?: string): Promise<{ currentStreak: number; longestStreak: number }> {
   try {
-    const data = await LocalStorage.getRaw<StreakData>(STREAK_KEY);
+    const streakKey = userId ? getStreakKey(userId) : STREAK_KEY;
+    const data = await LocalStorage.getRaw<StreakData>(streakKey);
     if (!data) return { currentStreak: 0, longestStreak: 0 };
     
     const today = new Date().toISOString().split("T")[0];

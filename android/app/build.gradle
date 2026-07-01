@@ -92,8 +92,8 @@ android {
         applicationId 'com.chatlas.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
-        versionName "1.0.3"
+        versionCode 11
+        versionName "1.0.4"
         manifestPlaceholders = [googleMapsApiKey: System.getenv("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY") ?: "YOUR_GOOGLE_MAPS_API_KEY"]
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }

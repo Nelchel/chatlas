@@ -10,10 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
+import { PawPrint, Mail, Lock, User } from "lucide-react-native";
 import { useAuth, AppUser } from "../hooks/useAuth";
 import { useGoogleAuth, signInWithAppleNative } from "../hooks/useOAuth";
-import { colors, spacing, borderRadius } from "../constants/theme";
+import { colors, spacing } from "../constants/theme";
 import { getMode } from "../services/mode";
 
 interface AuthScreenProps {
@@ -33,11 +35,8 @@ export function AuthScreen({ onAuthComplete }: AuthScreenProps) {
   const [emailSent, setEmailSent] = useState(false);
   const [appleBusy, setAppleBusy] = useState(false);
 
-  // Affiche les erreurs Google
   useEffect(() => {
-    if (googleError) {
-      Alert.alert("Erreur Google", googleError);
-    }
+    if (googleError) Alert.alert("Erreur Google", googleError);
   }, [googleError]);
 
   const handleGooglePress = async () => {
@@ -66,10 +65,15 @@ export function AuthScreen({ onAuthComplete }: AuthScreenProps) {
       Alert.alert("Champs requis", "Email et mot de passe requis");
       return;
     }
+
     setBusy(true);
     try {
       if (tab === "register") {
-        const result = await authService.signUpWithEmail(email.trim(), password, username.trim() || undefined);
+        const result = await authService.signUpWithEmail(
+            email.trim(),
+            password,
+            username.trim() || undefined
+        );
         await handleSignInResult(result);
         setEmailSent(true);
         setEmail("");
@@ -82,17 +86,17 @@ export function AuthScreen({ onAuthComplete }: AuthScreenProps) {
       }
     } catch (e: any) {
       const msg =
-        e.code === "auth/invalid-credential"
-          ? "Email ou mot de passe incorrect"
-          : e.code === "auth/email-already-in-use"
-            ? "Cet email est déjà utilisé"
-            : e.code === "auth/user-not-found"
-              ? "Aucun compte avec cet email"
-              : e.code === "auth/weak-password"
-                ? "Mot de passe trop court (6+ caractères)"
-                : e.code === "auth/invalid-email"
-                  ? "Email invalide"
-                  : e.message || "Erreur de connexion";
+          e.code === "auth/invalid-credential"
+              ? "Email ou mot de passe incorrect"
+              : e.code === "auth/email-already-in-use"
+                  ? "Cet email est déjà utilisé"
+                  : e.code === "auth/user-not-found"
+                      ? "Aucun compte avec cet email"
+                      : e.code === "auth/weak-password"
+                          ? "Mot de passe trop court (6+ caractères)"
+                          : e.code === "auth/invalid-email"
+                              ? "Email invalide"
+                              : e.message || "Erreur de connexion";
       Alert.alert("Erreur", msg);
     } finally {
       setBusy(false);
@@ -104,6 +108,7 @@ export function AuthScreen({ onAuthComplete }: AuthScreenProps) {
       Alert.alert("Champs requis", "Email requis");
       return;
     }
+
     setBusy(true);
     try {
       await authService.sendPasswordReset(email.trim());
@@ -116,363 +121,498 @@ export function AuthScreen({ onAuthComplete }: AuthScreenProps) {
     }
   };
 
-  const handleAnonymous = async () => {
-    setBusy(true);
-    try {
-      const result = await authService.signInAnonymously();
-      const appUser = await handleSignInResult(result);
-      onAuthComplete(appUser);
-    } catch (e: any) {
-      Alert.alert("Erreur", e.message || "Connexion anonyme échouée");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   if (mode === "local") return null;
 
+  const isRegister = tab === "register";
+  const isReset = tab === "reset";
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.header}>
-          <Text style={styles.logo}>🐱</Text>
-          <Text style={styles.title}>Chatlas</Text>
-          <Text style={styles.subtitle}>Découvre, identifie et collectionne les chats autour de toi.</Text>
-        </View>
+        <Image
+            source={require("../../assets/onboarding/paper.png")}
+            style={styles.paper}
+            resizeMode="cover"
+        />
 
-        <View style={styles.socialRow}>
-          <TouchableOpacity
-            style={[styles.socialButton, googleBusy && styles.buttonDisabled]}
-            onPress={handleGooglePress}
-            disabled={googleBusy}
-          >
-            {googleBusy ? (
-              <ActivityIndicator color={colors.text} />
-            ) : (
-              <Text style={styles.socialButtonText}>G  Continuer avec Google</Text>
-            )}
-          </TouchableOpacity>
-          {Platform.OS === "ios" && (
-            <TouchableOpacity
-              style={[styles.socialButton, styles.appleButton]}
-              onPress={handleApplePress}
-              disabled={appleBusy}
-            >
-              {appleBusy ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={[styles.socialButtonText, styles.appleButtonText]}>
-                    Continuer avec Apple
-                </Text>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>ou par email</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <View style={styles.tabRow}>
-          <TouchableOpacity
-            style={[styles.tab, tab === "login" && styles.tabActive]}
-            onPress={() => setTab("login")}
-          >
-            <Text style={[styles.tabText, tab === "login" && styles.tabTextActive]}>
-              Connexion
+        <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Chatlas</Text>
+            <Text style={styles.subtitle}>
+              L'encyclopédie vivante{"\n"}des chats du monde.
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, tab === "register" && styles.tabActive]}
-            onPress={() => setTab("register")}
-          >
-            <Text style={[styles.tabText, tab === "register" && styles.tabTextActive]}>
-              Inscription
-            </Text>
-          </TouchableOpacity>
-        </View>
+          </View>
 
-        {emailSent ? (
-          <View style={styles.form}>
-            <View style={styles.successBanner}>
-              <Text style={styles.successBannerEmoji}>✉️</Text>
-              <Text style={styles.successBannerText}>
-                Validation envoyée !
-              </Text>
-              <Text style={styles.successBannerSubtext}>
-                Un lien de confirmation a été envoyé à ton adresse email.
-                Vérifie ta boîte de réception et clique sur le lien pour activer ton compte.
-              </Text>
+          <View style={styles.panel}>
+            <Text style={styles.panelTitle}>
+              {isReset
+                  ? "Retrouver mon carnet"
+                  : isRegister
+                      ? "Commencer mon aventure"
+                      : "Reprendre mon aventure"}
+            </Text>
+
+            <View style={styles.panelDivider}>
+              <View style={styles.line} />
+              <PawPrint size={20} color="#4F6244" />
+              <View style={styles.line} />
             </View>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => {
-                setEmailSent(false);
-                setTab("login");
-              }}
-            >
-              <Text style={styles.primaryButtonText}>Aller à la connexion</Text>
-            </TouchableOpacity>
-          </View>
-        ) : tab !== "reset" ? (
-          <View style={styles.form}>
-            {tab === "register" && (
-              <TextInput
-                style={styles.input}
-                placeholder="Pseudo"
-                placeholderTextColor={colors.textSecondary}
-                value={username}
-                onChangeText={setUsername}
-                maxLength={30}
-                autoCapitalize="none"
-              />
-            )}
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Mot de passe"
-              placeholderTextColor={colors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete={tab === "register" ? "new-password" : "password"}
-            />
-            <TouchableOpacity
-              style={[styles.primaryButton, busy && styles.buttonDisabled]}
-              onPress={handleEmailAuth}
-              disabled={busy}
-            >
-              {busy ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.primaryButtonText}>
-                  {tab === "register" ? "Créer mon compte" : "Se connecter"}
-                </Text>
-              )}
-            </TouchableOpacity>
-            {tab === "login" && (
-              <TouchableOpacity onPress={() => setTab("reset")}>
-                <Text style={styles.link}>Mot de passe oublié ?</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <View style={styles.form}>
-            <Text style={styles.resetInfo}>
-              Saisis ton email pour recevoir un lien de réinitialisation.
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TouchableOpacity
-              style={[styles.primaryButton, busy && styles.buttonDisabled]}
-              onPress={handlePasswordReset}
-              disabled={busy}
-            >
-              {busy ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>Envoyer le lien</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setTab("login")}>
-              <Text style={styles.link}>Retour à la connexion</Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+            {!isReset && (
+                <>
+                  <TouchableOpacity
+                      style={[styles.greenButton, googleBusy && styles.buttonDisabled]}
+                      onPress={handleGooglePress}
+                      disabled={googleBusy}
+                  >
+                    {googleBusy ? (
+                        <ActivityIndicator color="#F8F0DC" />
+                    ) : (
+                        <>
+                          <Image source={require("../../assets/google.png")} style={styles.googleIcon} />
+                          <Text style={styles.greenButtonText}>Continuer avec Google</Text>
+                          <PawPrint size={22} color="#F8F0DC" style={styles.buttonPaw} />
+                        </>
+                    )}
+                  </TouchableOpacity>
+
+                  {Platform.OS === "ios" && (
+                      <TouchableOpacity
+                          style={[styles.secondaryButton, appleBusy && styles.buttonDisabled]}
+                          onPress={handleApplePress}
+                          disabled={appleBusy}
+                      >
+                        {appleBusy ? (
+                            <ActivityIndicator color="#2D241D" />
+                        ) : (
+                            <Text style={styles.secondaryButtonText}> Continuer avec Apple</Text>
+                        )}
+                      </TouchableOpacity>
+                  )}
+
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>ou par email</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+                </>
+            )}
+
+            {emailSent ? (
+                <View style={styles.form}>
+                  <View style={styles.successBanner}>
+                    <Text style={styles.successBannerEmoji}>✉️</Text>
+                    <Text style={styles.successBannerText}>Validation envoyée !</Text>
+                    <Text style={styles.successBannerSubtext}>
+                      Un lien de confirmation a été envoyé à ton adresse email.
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                      style={styles.greenButton}
+                      onPress={() => {
+                        setEmailSent(false);
+                        setTab("login");
+                      }}
+                  >
+                    <Text style={styles.greenButtonText}>Aller à la connexion</Text>
+                  </TouchableOpacity>
+                </View>
+            ) : isReset ? (
+                <View style={styles.form}>
+                  <Text style={styles.resetInfo}>
+                    Saisis ton email pour recevoir un lien de réinitialisation.
+                  </Text>
+
+                  <View style={styles.inputWrapper}>
+                    <Mail size={20} color="#7C6E5B" />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Email"
+                        placeholderTextColor="#7C6E5B"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                      style={[styles.greenButton, busy && styles.buttonDisabled]}
+                      onPress={handlePasswordReset}
+                      disabled={busy}
+                  >
+                    {busy ? (
+                        <ActivityIndicator color="#F8F0DC" />
+                    ) : (
+                        <Text style={styles.greenButtonText}>Envoyer le lien</Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => setTab("login")}>
+                    <Text style={styles.link}>Retour à la connexion</Text>
+                  </TouchableOpacity>
+                </View>
+            ) : (
+                <View style={styles.form}>
+                  {isRegister && (
+                      <View style={styles.inputWrapper}>
+                        <User size={20} color="#7C6E5B" />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Pseudo"
+                            placeholderTextColor="#7C6E5B"
+                            value={username}
+                            onChangeText={setUsername}
+                            maxLength={30}
+                            autoCapitalize="none"
+                        />
+                      </View>
+                  )}
+
+                  <View style={styles.inputWrapper}>
+                    <Mail size={20} color="#7C6E5B" />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Email"
+                        placeholderTextColor="#7C6E5B"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoComplete="email"
+                    />
+                  </View>
+
+                  <View style={styles.inputWrapper}>
+                    <Lock size={20} color="#7C6E5B" />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Mot de passe"
+                        placeholderTextColor="#7C6E5B"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        autoCapitalize="none"
+                        autoComplete={isRegister ? "new-password" : "password"}
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                      style={[styles.greenButton, busy && styles.buttonDisabled]}
+                      onPress={handleEmailAuth}
+                      disabled={busy}
+                  >
+                    {busy ? (
+                        <ActivityIndicator color="#F8F0DC" />
+                    ) : (
+                        <>
+                          <Text style={styles.greenButtonText}>
+                            {isRegister ? "Créer mon carnet" : "Se connecter"}
+                          </Text>
+                          <PawPrint size={22} color="#F8F0DC" style={styles.buttonPaw} />
+                        </>
+                    )}
+                  </TouchableOpacity>
+
+                  {!isRegister && (
+                      <TouchableOpacity onPress={() => setTab("reset")}>
+                        <Text style={styles.link}>Mot de passe oublié ?</Text>
+                      </TouchableOpacity>
+                  )}
+                </View>
+            )}
+
+            {!emailSent && !isReset && (
+                <View style={styles.switchBox}>
+                  <Text style={styles.switchLabel}>
+                    {isRegister ? "Déjà explorateur ?" : "Nouvel explorateur ?"}
+                  </Text>
+
+                  <TouchableOpacity
+                      style={styles.switchButton}
+                      onPress={() => setTab(isRegister ? "login" : "register")}
+                  >
+                    <Text style={styles.switchButtonText}>
+                      {isRegister ? "Reprendre mon aventure" : "Commencer mon aventure"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "#F3EBD7",
   },
+
+  paper: {
+    ...StyleSheet.absoluteFillObject,
+    left: -50,
+    top: -20,
+    opacity: 0.9,
+  },
+
   scroll: {
     flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 60,
+    paddingHorizontal: 22,
+    paddingTop: 48,
+    paddingBottom: 40,
   },
+
   header: {
     alignItems: "center",
-    marginBottom: spacing.xl,
+    marginBottom: 8,
   },
-  logo: {
-    fontSize: 64,
-    marginBottom: spacing.md,
-  },
+
   title: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: colors.text,
+    fontFamily: "CormorantGaramond_700Bold",
+    fontSize: 54,
+    lineHeight: 58,
+    color: "#2D241D",
   },
+
   subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 4,
+    fontFamily: "CormorantGaramond_600SemiBold",
+    fontSize: 20,
+    lineHeight: 24,
+    color: "#5D5144",
+    textAlign: "center",
   },
-  socialRow: {
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
+
+  grasminou: {
+    width: 210,
+    height: 190,
+    marginTop: -4,
+    marginBottom: -20,
   },
-  socialButton: {
+
+  panel: {
+    backgroundColor: "rgba(248, 241, 223, 0.88)",
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "#D8C6A3",
+    padding: 20,
+    shadowColor: "#2A2521",
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+    marginTop: 10,
+  },
+
+  panelTitle: {
+    fontFamily: "CormorantGaramond_700Bold",
+    fontSize: 34,
+    lineHeight: 38,
+    color: "#3E5E41",
+    textAlign: "center",
+  },
+
+  panelDivider: {
+    marginTop: 8,
+    marginBottom: 18,
     flexDirection: "row",
     alignItems: "center",
+    gap: 10,
+  },
+
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#D8C6A3",
+  },
+
+  greenButton: {
+    minHeight: 58,
+    borderRadius: 18,
+    marginBottom: 12,
+    backgroundColor: "#3E5E41",
+    borderWidth: 1.5,
+    borderColor: "#5F7B59",
     justifyContent: "center",
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.sm,
-    paddingVertical: spacing.md,
+    alignItems: "center",
+    overflow: "hidden",
+
+    shadowColor: "#1B2218",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 22,
+    elevation: 10,
+  },
+
+  greenButtonText: {
+    color: "#F8F0DC",
+    fontFamily: "CormorantGaramond_700Bold",
+    fontSize: 23,
+  },
+
+  googleIcon: {
+    position: "absolute",
+    left: 26,
+    width: 22,
+    height: 22,
+    resizeMode: "contain",
+  },
+
+  buttonPaw: {
+    position: "absolute",
+    right: 22,
+    opacity: 0.75,
+  },
+
+  secondaryButton: {
+    minHeight: 54,
+    borderRadius: 18,
+    backgroundColor: "#EFE4C8",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#D8C6A3",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  socialButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
+
+  secondaryButtonText: {
+    fontFamily: "CormorantGaramond_700Bold",
+    color: "#2D241D",
+    fontSize: 21,
   },
-  appleButton: {
-    backgroundColor: "#000",
-    borderColor: "#000",
-  },
-  appleButtonText: {
-    color: "#FFF",
-  },
+
   divider: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.lg,
+    marginVertical: 12,
   },
+
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: "#D8C6A3",
   },
+
   dividerText: {
-    marginHorizontal: spacing.md,
-    fontSize: 13,
-    color: colors.textSecondary,
+    marginHorizontal: 14,
+    fontFamily: "CormorantGaramond_600SemiBold",
+    fontSize: 18,
+    color: "#7C6E5B",
   },
-  tabRow: {
-    flexDirection: "row",
-    marginBottom: spacing.lg,
-    borderRadius: borderRadius.md,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    alignItems: "center",
-    backgroundColor: colors.surface,
-  },
-  tabActive: {
-    backgroundColor: colors.primary,
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.textSecondary,
-  },
-  tabTextActive: {
-    color: "#FFF",
-  },
+
   form: {
-    gap: spacing.md,
+    gap: 12,
   },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.sm,
-    padding: spacing.md,
-    fontSize: 16,
-    color: colors.text,
+
+  inputWrapper: {
+    minHeight: 58,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 248, 232, 0.78)",
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.sm,
-    paddingVertical: spacing.md,
+    borderColor: "#D8C6A3",
+    paddingHorizontal: 16,
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: spacing.sm,
+    gap: 12,
   },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#FFF",
+
+  input: {
+    flex: 1,
+    fontFamily: "CormorantGaramond_600SemiBold",
+    fontSize: 20,
+    color: "#2D241D",
+    paddingVertical: 0,
   },
+
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.55,
   },
+
   link: {
     textAlign: "center",
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: "600",
-    marginTop: spacing.sm,
+    color: "#3E5E41",
+    fontFamily: "CormorantGaramond_700Bold",
+    fontSize: 19,
+    marginTop: 4,
   },
+
   resetInfo: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    fontFamily: "CormorantGaramond_600SemiBold",
+    fontSize: 18,
+    color: "#5D5144",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 24,
+    marginBottom: 4,
   },
+
   successBanner: {
-    backgroundColor: "#E8F5E9",
-    borderRadius: borderRadius.md,
+    backgroundColor: "rgba(232, 245, 233, 0.75)",
+    borderRadius: 20,
     padding: spacing.lg,
     alignItems: "center",
-    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: "#A9C393",
   },
+
   successBannerEmoji: {
-    fontSize: 32,
-    marginBottom: spacing.sm,
+    fontSize: 34,
+    marginBottom: 8,
   },
+
   successBannerText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#2E7D32",
-    marginBottom: spacing.xs,
+    fontFamily: "CormorantGaramond_700Bold",
+    fontSize: 24,
+    color: "#3E5E41",
+    marginBottom: 4,
     textAlign: "center",
   },
+
   successBannerSubtext: {
-    fontSize: 14,
-    color: "#388E3C",
+    fontFamily: "CormorantGaramond_600SemiBold",
+    fontSize: 17,
+    color: "#4F6244",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 22,
   },
-  skipButton: {
-    marginTop: spacing.xl,
+
+  switchBox: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#D8C6A3",
     alignItems: "center",
-    paddingVertical: spacing.md,
   },
-  skipText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: "600",
+
+  switchLabel: {
+    fontFamily: "CormorantGaramond_600SemiBold",
+    color: "#5D5144",
+    fontSize: 19,
+    marginBottom: 10,
+  },
+
+  switchButton: {
+    width: "100%",
+    minHeight: 54,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 248, 232, 0.75)",
+    borderWidth: 1,
+    borderColor: "#D8C6A3",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  switchButtonText: {
+    fontFamily: "CormorantGaramond_700Bold",
+    color: "#3E5E41",
+    fontSize: 22,
   },
 });

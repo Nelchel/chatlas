@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -8,8 +14,8 @@ import { colors, spacing } from "../constants/theme";
 import { LocalStorage } from "../services/storage";
 import { getMode } from "../services/mode";
 import { useAuth } from "../hooks/useAuth";
+
 import { HomeMapScreen } from "../screens/HomeMapScreen";
-import { CaptureCatScreen } from "../screens/CaptureCatScreen";
 import { CatDetailScreen } from "../screens/CatDetailScreen";
 import { ActivityFeedScreen } from "../screens/ActivityFeedScreen";
 import { CollectionScreen } from "../screens/CollectionScreen";
@@ -24,76 +30,123 @@ import { AuthScreen } from "../screens/AuthScreen";
 import { WelcomeScreen } from "../screens/WelcomeScreen";
 import { UsernameSetupScreen } from "../screens/UsernameSetupScreen";
 
+import {
+  Map,
+  CalendarCheck,
+  Search,
+  ScrollText,
+  UserRound,
+  PawPrint,
+} from "lucide-react-native";
+
 const AUTH_SETUP_KEY = "auth_setup_complete";
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    HomeMap: "🗺️",
-    Capture: "📸",
-    Activity: "🐱",
-    Collection: "📚",
-    Quests: "🎯",
-    Profile: "👤",
-  };
+const iconComponents: Record<string, any> = {
+  HomeMap: Map,
+  Activity: CalendarCheck,
+  Collection: Search,
+  Quests: ScrollText,
+  Profile: UserRound,
+};
+
+const tabLabels: Record<string, string> = {
+  HomeMap: "Carte",
+  Activity: "Activité",
+  Collection: "Chatlas",
+  Quests: "Quêtes",
+  Profile: "Profil",
+};
+
+function CustomTabBar({ state, descriptors, navigation }: any) {
   return (
-    <Text style={[styles.tabIcon, focused && styles.tabIconFocused]}>
-      {icons[label] || "📍"}
-    </Text>
+      <View style={styles.tabBarWrapper}>
+        <View style={styles.tabBarContainer}>
+          {state.routes.map((route: any, index: number) => {
+            const { options } = descriptors[route.key];
+            const isFocused = state.index === index;
+            const IconComponent = iconComponents[route.name];
+            const label = tabLabels[route.name];
+
+            const onPress = () => {
+              const event = navigation.emit({
+                type: "tabPress",
+                target: route.key,
+                canPreventDefault: true,
+              });
+
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            };
+
+            return (
+                <TouchableOpacity
+                    key={route.key}
+                    accessibilityRole="button"
+                    accessibilityState={isFocused ? { selected: true } : {}}
+                    accessibilityLabel={options.tabBarAccessibilityLabel}
+                    testID={options.tabBarTestID}
+                    onPress={onPress}
+                    activeOpacity={0.85}
+                    style={styles.tabButton}
+                >
+                  <View
+                      style={
+                        isFocused ? styles.activeTabInner : styles.inactiveTabInner
+                      }
+                  >
+                    {isFocused ? (
+                        <PawPrint
+                            size={21}
+                            color="#E7C16A"
+                            strokeWidth={2.4}
+                        />
+                    ) : (
+                        <IconComponent
+                            size={24}
+                            color="#4D463C"
+                            strokeWidth={2}
+                        />
+                    )}
+
+                    <Text
+                        style={isFocused ? styles.activeLabel : styles.inactiveLabel}
+                        numberOfLines={1}
+                    >
+                      {label}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
   );
 }
 
 function MainTabs() {
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ focused }) => (
-          <TabIcon label={route.name} focused={focused} />
-        ),
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabLabel,
-      })}
-    >
-      <Tab.Screen
-        name="HomeMap"
-        component={HomeMapScreen}
-        options={{ tabBarLabel: "Carte" }}
-      />
-      <Tab.Screen
-        name="Capture"
-        component={CaptureCatScreen}
-        options={{ tabBarLabel: "Capturer" }}
-      />
-      <Tab.Screen
-        name="Activity"
-        component={ActivityFeedScreen}
-        options={{ tabBarLabel: "Activité" }}
-      />
-      <Tab.Screen
-        name="Collection"
-        component={CollectionScreen}
-        options={{ tabBarLabel: "Chatlas" }}
-      />
-      <Tab.Screen
-        name="Quests"
-        component={QuestsScreen}
-        options={{ tabBarLabel: "Quêtes" }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ tabBarLabel: "Profil" }}
-      />
-    </Tab.Navigator>
+      <Tab.Navigator
+          tabBar={(props) => <CustomTabBar {...props} />}
+          screenOptions={{
+            headerShown: false,
+          }}
+      >
+        <Tab.Screen name="HomeMap" component={HomeMapScreen} />
+        <Tab.Screen name="Activity" component={ActivityFeedScreen} />
+        <Tab.Screen name="Collection" component={CollectionScreen} />
+        <Tab.Screen name="Quests" component={QuestsScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+      </Tab.Navigator>
   );
 }
 
 export function AppNavigator() {
   const { authReady, user, onSignOut } = useAuth();
+
   const [username, setUsername] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [authSetupDone, setAuthSetupDone] = useState(false);
@@ -116,6 +169,7 @@ export function AppNavigator() {
         setUsername(null);
         LocalStorage.getUsername().then((name) => setUsername(name || null));
       });
+
       return unsubscribe;
     }
   }, [mode, onSignOut]);
@@ -136,26 +190,22 @@ export function AppNavigator() {
     setAuthSetupDone(true);
   };
 
-  // Auto-complete auth setup if user is logged in (Google/Apple OAuth)
   useEffect(() => {
     if (mode === "firebase" && user && !authSetupDone && !checkingAuthSetup) {
       setAuthSetupDone(true);
     }
-  }, [user, authSetupDone, mode, checkingAuthSetup]);
+  }, [user, authSetupDone, checkingAuthSetup, mode]);
 
-  // Rafraîchir le pseudo quand l'utilisateur se reconnecte
   useEffect(() => {
-    if (user?.username) {
-      setUsername(user.username);
-    }
+    if (user?.username) setUsername(user.username);
   }, [user]);
 
   if ((mode === "firebase" && (!authReady || checkingAuthSetup)) || checking) {
     return (
-      <View style={styles.splash}>
-        <Text style={styles.splashEmoji}>🐱</Text>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+        <View style={styles.splash}>
+          <Text style={styles.splashEmoji}>🐱</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
     );
   }
 
@@ -163,92 +213,73 @@ export function AppNavigator() {
     return <WelcomeScreen onContinue={() => setWelcomeDone(true)} />;
   }
 
-  if (mode === "firebase" && !authSetupDone) {
-    return <AuthScreen onAuthComplete={handleAuthComplete} />;
-  }
-
-  if (mode === "firebase" && !user) {
+  if (mode === "firebase" && (!authSetupDone || !user)) {
     return <AuthScreen onAuthComplete={handleAuthComplete} />;
   }
 
   if (!username) {
     return (
-      <UsernameSetupScreen
-        onComplete={async (name) => {
-          setUsername(name);
-          if (mode === "firebase") {
-            try {
-              const { updateDoc, doc } = await import("firebase/firestore");
-              const { db: fbDb } = await import("../services/firebase");
-              const { auth: fbAuth } = await import("../services/firebase");
-              if (fbAuth?.currentUser) {
-                await updateDoc(doc(fbDb!, "profiles", fbAuth.currentUser.uid), {
-                  username: name,
-                });
-              }
-            } catch {}
-          }
-        }}
-      />
+        <UsernameSetupScreen
+            onComplete={async (name) => {
+              setUsername(name);
+            }}
+        />
     );
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: "600" },
-        }}
-      >
-        <Stack.Screen
-          name="MainTabs"
-          component={MainTabs}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="CatDetail"
-          component={CatDetailScreen}
-          options={{ title: "Fiche Chat" }}
-        />
-        <Stack.Screen
-          name="CaptureCat"
-          component={CaptureCatScreen}
-          options={{ title: "Capturer un Chat" }}
-        />
-        <Stack.Screen
-          name="Leaderboard"
-          component={LeaderboardScreen}
-          options={{ title: "Classement" }}
-        />
-        <Stack.Screen
-          name="BugReport"
-          component={BugReportScreen}
-          options={{ title: "Signaler un bug" }}
-        />
-        <Stack.Screen
-          name="Badges"
-          component={BadgesScreen}
-          options={{ title: "Tous les badges" }}
-        />
-        <Stack.Screen
-          name="Stats"
-          component={StatsScreen}
-          options={{ title: "Statistiques" }}
-        />
-        <Stack.Screen
-          name="Quests"
-          component={QuestsScreen}
-          options={{ title: "Quêtes" }}
-        />
-        <Stack.Screen
-          name="PublicProfile"
-          component={PublicProfileScreen}
-          options={{ title: "Profil" }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+      <NavigationContainer>
+        <Stack.Navigator
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: colors.background,
+              },
+              headerTintColor: colors.text,
+            }}
+        >
+          <Stack.Screen
+              name="MainTabs"
+              component={MainTabs}
+              options={{ headerShown: false }}
+          />
+
+          <Stack.Screen
+              name="CatDetail"
+              component={CatDetailScreen}
+              options={{ title: "Fiche Chat" }}
+          />
+
+          <Stack.Screen
+              name="Leaderboard"
+              component={LeaderboardScreen}
+              options={{ title: "Classement" }}
+          />
+
+          <Stack.Screen
+              name="BugReport"
+              component={BugReportScreen}
+              options={{ title: "Signaler un bug" }}
+          />
+
+          <Stack.Screen
+              name="Badges"
+              component={BadgesScreen}
+              options={{ title: "Badges" }}
+          />
+
+          <Stack.Screen
+              name="Stats"
+              component={StatsScreen}
+              options={{ title: "Statistiques" }}
+          />
+
+          <Stack.Screen
+              name="PublicProfile"
+              component={PublicProfileScreen}
+              options={{ title: "Profil" }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
   );
 }
 
@@ -259,27 +290,85 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.background,
   },
+
   splashEmoji: {
     fontSize: 48,
     marginBottom: spacing.md,
   },
-  tabBar: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.border,
+
+  tabBarWrapper: {
+    backgroundColor: "transparent",
+  },
+  tabBarContainer: {
+    height: 92,
+    flexDirection: "row",
+    paddingTop: 8,
+    paddingBottom: 14,
+
+    backgroundColor: "#F8F0DC",
+
     borderTopWidth: 1,
-    paddingTop: spacing.xs,
-    height: 85,
+    borderTopColor: "#DCCEB1",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+
+    elevation: 12,
   },
-  tabLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: spacing.xs,
+
+  tabButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  tabIcon: {
-    fontSize: 24,
-    opacity: 0.5,
+
+  inactiveTabInner: {
+    width: 60,
+    height: 60,
+
+    alignItems: "center",
+    justifyContent: "center",
   },
-  tabIconFocused: {
-    opacity: 1,
+
+  inactiveLabel: {
+    marginTop: 2,
+    fontSize: 14,
+    lineHeight: 16,
+    color: "#3F382E",
+    fontFamily: "CormorantGaramond_700Bold",
+    textAlign: "center",
+  },
+  activeTabInner: {
+    width: 52,
+    height: 60,
+
+    borderRadius: 26,
+
+    backgroundColor: "#355C3C",
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    transform: [{ translateY: -6 }],
+
+    shadowColor: "#243922",
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+
+    elevation: 8,
+  },
+  activeLabel: {
+    marginTop: 4,
+
+    color: "#FFF7E8",
+
+    fontSize: 13,
+
+    fontFamily: "CormorantGaramond_700Bold",
   },
 });

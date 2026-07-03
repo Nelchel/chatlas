@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Image,
   StyleSheet,
   View,
   Text,
@@ -30,6 +31,11 @@ export function UsernameSetupScreen({ onComplete }: Props) {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <Image
+        source={require("../../assets/onboarding/paper.png")}
+        style={styles.paperBackground}
+        resizeMode="cover"
+      />
       <View style={styles.hero}>
         <Text style={styles.emoji}>🐱</Text>
         <Text style={styles.title}>Bienvenue sur Chatlas</Text>
@@ -72,7 +78,7 @@ export function UsernameSetupScreen({ onComplete }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
     justifyContent: "center",
     paddingHorizontal: spacing.xl,
   },
@@ -129,5 +135,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: "center",
     marginTop: spacing.lg,
+  },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
   },
 });

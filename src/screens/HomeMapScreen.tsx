@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from "react-native";
 import MapView, { Marker, Heatmap, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -108,14 +109,28 @@ export function HomeMapScreen() {
 
   return (
     <View style={styles.container}>
+      <Image
+          source={require("../../assets/onboarding/paper.png")}
+          style={styles.paperBackground}
+          resizeMode="cover"
+      />
       <View style={styles.header}>
-        <Text style={styles.title}>🗺️ Chatlas</Text>
-        <Text style={styles.subtitle}>
-          {cats.length} chat{cats.length !== 1 ? "s" : ""} répertorié
-          {cats.length !== 1 ? "s" : ""}
-        </Text>
-      </View>
+        <TouchableOpacity style={styles.menuButton}>
+          <Text style={styles.menuIcon}>☰</Text>
+        </TouchableOpacity>
 
+        <View style={styles.headerCenter}>
+          <Text style={styles.title}>Chatlas</Text>
+
+          <Text style={styles.subtitle}>
+            L'encyclopédie vivante{"\n"}des chats du monde
+          </Text>
+        </View>
+
+        <TouchableOpacity style={styles.profileButton}>
+          <Text style={styles.profileIcon}>🐾</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.mapWrapper}>
         <MapView
           ref={(ref) => { mapRef.current = ref; }}
@@ -315,7 +330,12 @@ export function HomeMapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
+  },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
   },
   centered: {
     flex: 1,
@@ -329,27 +349,71 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   header: {
-    paddingTop: 60,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.background,
+    paddingTop: 58,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "transparent",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: colors.text,
+  menuButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 4,
+  menuIcon:{
+    fontSize:24,
+    color:"#3B2E24"
+  },
+  headerCenter:{
+    alignItems:"center",
+    flex:1,
+  },
+  title:{
+    fontSize:36,
+    color:"#2C241D",
+    fontFamily:"CormorantGaramond_700Bold",
+  },
+  subtitle:{
+    marginTop:-2,
+    fontSize:16,
+    lineHeight:16,
+    textAlign:"center",
+    color:"#4D463C",
+    fontFamily:"CormorantGaramond_600SemiBold",
+  },
+  profileButton:{
+    width:42,
+    height:42,
+    borderRadius:21,
+    backgroundColor:"#D8A24B",
+    alignItems:"center",
+    justifyContent:"center",
+    shadowColor:"#000",
+    shadowOpacity:0.12,
+    shadowRadius:6,
+    elevation:4,
+  },
+  profileIcon:{
+    fontSize:22,
   },
   mapWrapper: {
     flex: 1,
     position: "relative",
+    overflow: "hidden",
+    marginRight: 12,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: "#D8C9A8",
   },
   map: {
-    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
   },
   controlsTopRight: {
     position: "absolute",

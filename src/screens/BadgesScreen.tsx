@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, ScrollView } from "react-native";
+import { StyleSheet, View, Text, ScrollView, Image } from "react-native";
 import { useEffect, useState } from "react";
 import { useCats } from "../hooks/useCats";
 import { colors, spacing, borderRadius } from "../constants/theme";
@@ -23,6 +23,11 @@ export function BadgesScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Image
+          source={require("../../assets/onboarding/paper.png")}
+          style={styles.paperBackground}
+          resizeMode="cover"
+      />
       <Text style={styles.title}>
         🏅 Tes Badges ({userBadges.length} / {ALL_BADGES.length})
       </Text>
@@ -80,7 +85,12 @@ export function BadgesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
+  },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
   },
   content: {
     padding: spacing.md,

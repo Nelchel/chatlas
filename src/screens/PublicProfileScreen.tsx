@@ -5,6 +5,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
@@ -119,6 +120,11 @@ export function PublicProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Image
+          source={require("../../assets/onboarding/paper.png")}
+          style={styles.paperBackground}
+          resizeMode="cover"
+      />
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
           <Text style={styles.avatarEmoji}>👤</Text>
@@ -221,7 +227,12 @@ export function PublicProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
+  },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
   },
   content: {
     padding: spacing.lg,

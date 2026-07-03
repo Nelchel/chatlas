@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  ImageBackground,
 } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -62,7 +63,11 @@ const tabLabels: Record<string, string> = {
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   return (
-      <View style={styles.tabBarWrapper}>
+      <ImageBackground
+        source={require("../../assets/onboarding/paper.png")}
+        style={styles.tabBarWrapper}
+        imageStyle={styles.tabBarImage}
+      >
         <View style={styles.tabBarContainer}>
           {state.routes.map((route: any, index: number) => {
             const { options } = descriptors[route.key];
@@ -123,7 +128,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             );
           })}
         </View>
-      </View>
+      </ImageBackground>
   );
 }
 
@@ -228,13 +233,15 @@ export function AppNavigator() {
   }
 
   return (
-      <NavigationContainer>
-        <Stack.Navigator
+      <View style={styles.container}>
+        <NavigationContainer>
+          <Stack.Navigator
             screenOptions={{
               headerStyle: {
                 backgroundColor: colors.background,
               },
               headerTintColor: colors.text,
+              contentStyle: { backgroundColor: 'transparent' },
             }}
         >
           <Stack.Screen
@@ -280,32 +287,43 @@ export function AppNavigator() {
           />
         </Stack.Navigator>
       </NavigationContainer>
+      </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    position: "relative",
+  },
   splash: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
   },
-
   splashEmoji: {
     fontSize: 48,
     marginBottom: spacing.md,
   },
 
   tabBarWrapper: {
+    height: 92,
+    width: "100%",
+    overflow: "hidden",
     backgroundColor: "transparent",
+  },
+  tabBarImage: {
+    width: "100%",
+    height: "100%",
   },
   tabBarContainer: {
     height: 92,
     flexDirection: "row",
-    paddingTop: 8,
-    paddingBottom: 14,
+    justifyContent: "center",
+    alignItems: "center",
 
-    backgroundColor: "#F8F0DC",
+    backgroundColor: "transparent",
 
     borderTopWidth: 1,
     borderTopColor: "#DCCEB1",
@@ -314,7 +332,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
 
-    elevation: 12,
+
   },
 
   tabButton: {

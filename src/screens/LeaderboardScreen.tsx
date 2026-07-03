@@ -3,6 +3,7 @@ import {
   StyleSheet,
   View,
   Text,
+  Image,
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
@@ -183,6 +184,11 @@ export function LeaderboardScreen() {
 
   return (
     <View style={styles.container}>
+      <Image
+          source={require("../../assets/onboarding/paper.png")}
+          style={styles.paperBackground}
+          resizeMode="cover"
+      />
       <View style={styles.header}>
         <Text style={styles.headerEmoji}>🏆</Text>
         <Text style={styles.title}>
@@ -334,7 +340,12 @@ export function LeaderboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
+  },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
   },
   centered: {
     flex: 1,

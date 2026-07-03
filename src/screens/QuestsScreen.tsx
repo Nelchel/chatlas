@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, ScrollView, Dimensions } from "react-native";
+import { StyleSheet, View, Text, Image, ScrollView, Dimensions } from "react-native";
 import { useCats } from "../hooks/useCats";
 import { colors, spacing, borderRadius } from "../constants/theme";
 import { formatTimeRemaining } from "../utils/quests";
@@ -55,6 +55,11 @@ export function QuestsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Image
+          source={require("../../assets/onboarding/paper.png")}
+          style={styles.paperBackground}
+          resizeMode="cover"
+      />
       <Text style={styles.header}>Quêtes</Text>
 
       <Text style={styles.sectionTitle}>Mission du jour</Text>
@@ -95,7 +100,12 @@ export function QuestsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
+  },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
   },
   content: {
     padding: spacing.md,

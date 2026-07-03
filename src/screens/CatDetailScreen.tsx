@@ -177,6 +177,11 @@ export function CatDetailScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      <Image
+          source={require("../../assets/onboarding/paper.png")}
+          style={styles.paperBackground}
+          resizeMode="cover"
+      />
       {/* Photo principale */}
       <View style={styles.imageContainer}>
         <Image
@@ -399,7 +404,12 @@ export function CatDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: "transparent" },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
+  },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background },
   emoji: { fontSize: 64, marginBottom: spacing.md },
   notFound: { fontSize: 18, color: colors.textSecondary },

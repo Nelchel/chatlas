@@ -243,6 +243,11 @@ export function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      <Image
+          source={require("../../assets/onboarding/paper.png")}
+          style={styles.paperBackground}
+          resizeMode="cover"
+      />
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Text style={styles.avatarEmoji}>🐱</Text>
@@ -667,7 +672,12 @@ export function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
+  },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
   },
   centered: {
     flex: 1,

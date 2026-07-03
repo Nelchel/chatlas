@@ -135,6 +135,11 @@ export function CollectionScreen() {
 
   return (
     <View style={styles.container}>
+      <Image
+          source={require("../../assets/onboarding/paper.png")}
+          style={styles.paperBackground}
+          resizeMode="cover"
+      />
       <View style={styles.header}>
         <Text style={styles.title}>📚 Chatlas</Text>
         <Text style={styles.subtitle}>L'encyclopédie des chats</Text>
@@ -214,7 +219,12 @@ const CARD_GAP = 12;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
+  },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
   },
   centered: {
     flex: 1,

@@ -80,6 +80,11 @@ export function BugReportScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Image
+            source={require("../../assets/onboarding/paper.png")}
+            style={styles.paperBackground}
+            resizeMode="cover"
+        />
         <View style={styles.content}>
           <Text style={styles.title}>🐛 Signaler un bug</Text>
           <Text style={styles.subtitle}>
@@ -143,7 +148,12 @@ export function BugReportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "transparent",
+  },
+  paperBackground: {
+    ...StyleSheet.absoluteFillObject,
+    top: -20,
+    left: -50,
   },
   scroll: {
     flex: 1,

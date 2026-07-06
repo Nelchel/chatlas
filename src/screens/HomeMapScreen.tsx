@@ -15,6 +15,7 @@ import { RootStackParamList } from "../types";
 import { useCats } from "../hooks/useCats";
 import { useLocation } from "../hooks/useLocation";
 import { CatMarker } from "../components/CatMarker";
+import { LevelBadge } from "../components/LevelBadge";
 import { colors, spacing, borderRadius } from "../constants/theme";
 import { calculateGeoStats } from "../utils/geoStats";
 
@@ -130,6 +131,9 @@ export function HomeMapScreen() {
         <TouchableOpacity style={styles.profileButton}>
           <Text style={styles.profileIcon}>🐾</Text>
         </TouchableOpacity>
+      </View>
+      <View style={styles.badgeContainer}>
+        <LevelBadge />
       </View>
       <View style={styles.mapWrapper}>
         <MapView
@@ -414,6 +418,13 @@ const styles = StyleSheet.create({
   map: {
     width: "100%",
     height: "100%",
+  },
+  badgeContainer: {
+    top: 149,
+    position: "absolute",
+    left: 8,
+    zIndex: 10,
+    alignSelf: "flex-start",
   },
   controlsTopRight: {
     position: "absolute",

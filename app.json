@@ -2,7 +2,7 @@
   "expo": {
     "name": "Chatlas",
     "slug": "cat-quest",
-    "version": "1.0.4",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -29,7 +29,7 @@
         "backgroundColor": "#FF8C5A"
       },
       "package": "com.chatlas.app",
-      "versionCode": 13,
+      "versionCode": 15,
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"

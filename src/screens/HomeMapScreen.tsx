@@ -16,6 +16,7 @@ import { useCats } from "../hooks/useCats";
 import { useLocation } from "../hooks/useLocation";
 import { CatMarker } from "../components/CatMarker";
 import { LevelBadge } from "../components/LevelBadge";
+import { DailyChallengeWidget } from "../components/DailyChallengeWidget";
 import { colors, spacing, borderRadius } from "../constants/theme";
 import { calculateGeoStats } from "../utils/geoStats";
 
@@ -311,6 +312,8 @@ export function HomeMapScreen() {
             </View>
           </View>
         )}
+
+        <DailyChallengeWidget />
       </View>
 
       <TouchableOpacity

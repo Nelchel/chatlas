@@ -86,7 +86,9 @@ export function CaptureCatScreen() {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [position, setPosition] = useState<{ latitude: number; longitude: number } | null>(
-    route.params?.latitude ? { latitude: route.params.latitude, longitude: route.params.longitude } : null
+    route.params?.latitude != null && route.params?.longitude != null
+      ? { latitude: route.params.latitude, longitude: route.params.longitude }
+      : null
   );
   const cameraRef = useRef<CameraView>(null);
 

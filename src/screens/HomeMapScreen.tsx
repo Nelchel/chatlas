@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -7,15 +7,20 @@ import {
   ActivityIndicator,
   ScrollView,
   Image,
+  Pressable,
 } from "react-native";
-import { MapPin, X } from "lucide-react-native";
+import { MapPin } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types";
 import { useCats } from "../hooks/useCats";
 import { LevelBadge } from "../components/LevelBadge";
 import { DailyChallengeWidget } from "../components/DailyChallengeWidget";
+import { CampActions } from "../components/CampActions";
 import { colors, spacing, borderRadius } from "../constants/theme";
+import { MapTutorial } from "../components/MapTutorial";
+import { LocalStorage } from "../services/storage";
 import { calculateGeoStats } from "../utils/geoStats";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -29,11 +34,46 @@ function SectionTitle({ children, emoji }: { children: string; emoji: string }) 
   );
 }
 
+function getCatPinImage(color?: string | null) {
+  const normalizedColor = color?.toLowerCase();
+
+  if (normalizedColor === "roux") {
+    return require("../../assets/cats/orange-cat.png");
+  }
+
+  if (normalizedColor === "noir") {
+    return require("../../assets/cats/black-cat.png");
+  }
+
+  if (normalizedColor === "blanc") {
+    return require("../../assets/cats/white-cat.png");
+  }
+
+  if (normalizedColor === "gris") {
+    return require("../../assets/cats/grey-cat.png");
+  }
+
+  if (normalizedColor === "tricolore") {
+    return require("../../assets/cats/tricolore-cat.png");
+  }
+
+  if (normalizedColor === "tigré") {
+    return require("../../assets/cats/tigre-cat.png");
+  }
+
+  if (normalizedColor === "siamois") {
+    return require("../../assets/cats/siamois-cat.png");
+  }
+
+  return null;
+}
+
 export function HomeMapScreen() {
   const navigation = useNavigation<Nav>();
   const { cats, sightings, loading, refresh } = useCats();
   const [showStats, setShowStats] = useState(false);
   const [campOpen, setCampOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useFocusEffect(
       useCallback(() => {
@@ -41,16 +81,25 @@ export function HomeMapScreen() {
       }, [refresh])
   );
 
-  const { cityStats, countryStats, totalCities, totalCountries } =
-      useMemo(() => {
-        return calculateGeoStats(sightings, cats);
-      }, [sightings, cats]);
+  useEffect(() => {
+    LocalStorage.getRaw<boolean>("@catquest_map_tutorial_seen").then((seen) => {
+      if (!seen) {
+        const timer = setTimeout(() => setShowTutorial(true), 800);
+        return () => clearTimeout(timer);
+      }
+    });
+  }, []);
+
+  const { cityStats, countryStats, totalCities, totalCountries } = useMemo(() => {
+    return calculateGeoStats(sightings, cats);
+  }, [sightings, cats]);
 
   const sightingsWithCoords = sightings.filter(
       (s) => s.latitude && s.longitude
   );
 
   const sightingsCountByCat = new Map<string, number>();
+
   sightingsWithCoords.forEach((s) => {
     sightingsCountByCat.set(
         s.cat_id,
@@ -67,10 +116,41 @@ export function HomeMapScreen() {
       .slice(0, 4) as { cat: any; count: number }[];
 
   const fallbackPins = [
-    { id: "pin-1", count: 12, emoji: "🐈‍⬛", style: styles.catPinOne },
-    { id: "pin-2", count: 3, emoji: "🐈‍⬛", style: styles.catPinTwo },
-    { id: "pin-3", count: 2, emoji: "🐱", style: styles.catPinThree },
-    { id: "pin-4", count: 3, emoji: "🐈", style: styles.catPinFour },
+    {
+      id: "pin-1",
+      count: 12,
+      emoji: "🐈‍⬛",
+      pinImage: require("../../assets/cats/black-cat.png"),
+      style: styles.catPinOne,
+    },
+    {
+      id: "pin-2",
+      count: 3,
+      emoji: "🐈‍⬛",
+      pinImage: require("../../assets/cats/black-cat.png"),
+      style: styles.catPinTwo,
+    },
+    {
+      id: "pin-3",
+      count: 2,
+      emoji: "🐱",
+      pinImage: require("../../assets/cats/tigre-cat.png"),
+      style: styles.catPinThree,
+    },
+    {
+      id: "pin-4",
+      count: 3,
+      emoji: "🐈",
+      pinImage: require("../../assets/cats/orange-cat.png"),
+      style: styles.catPinFour,
+    },
+  ];
+
+  const pinPositions = [
+    styles.catPinOne,
+    styles.catPinTwo,
+    styles.catPinThree,
+    styles.catPinFour,
   ];
 
   const pins =
@@ -80,13 +160,8 @@ export function HomeMapScreen() {
             count: item.count,
             emoji: "🐈‍⬛",
             catId: item.cat.id,
-            style:
-                [
-                  styles.catPinOne,
-                  styles.catPinTwo,
-                  styles.catPinThree,
-                  styles.catPinFour,
-                ][index] || styles.catPinTwo,
+            pinImage: getCatPinImage(item.cat.color),
+            style: pinPositions[index] || styles.catPinTwo,
           }))
           : fallbackPins;
 
@@ -128,187 +203,191 @@ export function HomeMapScreen() {
           <LevelBadge />
         </View>
 
-        <View style={styles.mapWrapper}>
-          <Image
-              source={require("../../assets/map/adventure-map.png")}
-              style={styles.illustratedMap}
-              resizeMode="cover"
+        <View style={styles.mapShadow}>
+          <LinearGradient
+              colors={[
+                "rgba(0,0,0,0.12)",
+                "transparent",
+                "transparent",
+                "rgba(0,0,0,0.10)",
+              ]}
+              style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
           />
 
+          <View style={styles.mapWrapper}>
+            <Image
+                source={require("../../assets/map/adventure-map.png")}
+                style={styles.illustratedMap}
+                resizeMode="cover"
+            />
 
-          {pins.map((pin) => (
-              <TouchableOpacity
-                  key={pin.id}
-                  style={[styles.catPin, pin.style]}
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    if ("catId" in pin && pin.catId) {
-                      navigation.navigate("CatDetail", { catId: pin.catId });
-                    }
-                  }}
-              >
-                <View style={styles.catAvatar}>
-                  <Text style={styles.catEmoji}>{pin.emoji}</Text>
-                </View>
-
-                <Text style={styles.catPinCount}>{pin.count}</Text>
-              </TouchableOpacity>
-          ))}
-
-          <TouchableOpacity
-              activeOpacity={0.9}
-              style={styles.currentPosition}
-              onPress={() => setCampOpen(true)}
-          >
-            <MapPin size={28} color="white" />
-          </TouchableOpacity>
-
-          {campOpen && (
-              <View style={styles.campActions}>
+            {pins.map((pin) => (
                 <TouchableOpacity
-                    style={[styles.campAction, styles.campActionPhoto]}
+                    key={pin.id}
+                    style={[styles.catPin, pin.style]}
+                    activeOpacity={0.85}
                     onPress={() => {
+                      if ("catId" in pin && pin.catId) {
+                        navigation.navigate("CatDetail", { catId: pin.catId });
+                      }
+                    }}
+                >
+                  <View style={styles.catPinShadow}>
+                    <View style={styles.catAvatar}>
+                      {pin.pinImage ? (
+                          <Image
+                              source={pin.pinImage}
+                              style={styles.catPinImage}
+                              resizeMode="contain"
+                          />
+                      ) : (
+                          <Text style={styles.catEmoji}>{pin.emoji}</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.catPinPoint} />
+
+                  <View style={styles.catPinCount}>
+                    <Text style={styles.catPinCountText}>{pin.count}</Text>
+                  </View>
+                </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+                activeOpacity={0.9}
+                style={styles.currentPosition}
+                onPress={() => setCampOpen(true)}
+            >
+              <MapPin size={28} color="white" />
+            </TouchableOpacity>
+
+            {campOpen && (
+                <CampActions
+                    onPhotoPress={() => {
                       setCampOpen(false);
                       navigation.navigate("CaptureCat", {});
                     }}
-                    activeOpacity={0.9}
-                >
-                  <View style={styles.campIconWrapper}>
-                    <Image
-                        source={require("../../assets/map/photo.png")}
-                        style={styles.campIcon}
-                        resizeMode="contain"
-                    />
-                  </View>
-                  <View style={styles.campTextWrapper}>
-                    <Text style={styles.campActionText}>Photo</Text>
-                  </View>
-                </TouchableOpacity>
+                    onClose={() => setCampOpen(false)}
+                />
+            )}
 
-                <TouchableOpacity
-                    style={styles.campClose}
-                    onPress={() => setCampOpen(false)}
-                    activeOpacity={0.9}
-                >
-                  <X size={24} color="white" />
-                </TouchableOpacity>
-              </View>
-          )}
+            <Pressable style={styles.compass} onPress={() => setShowStats(true)}>
+              <Text style={styles.compassIcon}>🧭</Text>
+            </Pressable>
 
-          <TouchableOpacity
-              style={styles.compass}
-              activeOpacity={0.85}
-              onPress={() => setShowStats(true)}
-          >
-            <Text style={styles.compassIcon}>🧭</Text>
-          </TouchableOpacity>
+            <DailyChallengeWidget />
 
-          <DailyChallengeWidget />
+            {showStats && (
+                <View style={styles.statsOverlay}>
+                  <View style={styles.statsPanel}>
+                    <View style={styles.statsHeader}>
+                      <Text style={styles.statsTitle}>📊 Statistiques</Text>
 
-          {showStats && (
-              <View style={styles.statsOverlay}>
-                <View style={styles.statsPanel}>
-                  <View style={styles.statsHeader}>
-                    <Text style={styles.statsTitle}>📊 Statistiques</Text>
-
-                    <TouchableOpacity
-                        onPress={() => setShowStats(false)}
-                        style={styles.statsCloseBtn}
-                    >
-                      <Text style={styles.statsCloseText}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <ScrollView
-                      style={{ flex: 1 }}
-                      showsVerticalScrollIndicator={false}
-                      contentContainerStyle={styles.statsScroll}
-                  >
-                    <View style={styles.summaryCard}>
-                      <View style={styles.summaryRow}>
-                        <View style={styles.summaryItem}>
-                          <Text style={styles.summaryValue}>{totalCities}</Text>
-                          <Text style={styles.summaryLabel}>villes découvertes</Text>
-                        </View>
-
-                        <View style={styles.divider} />
-
-                        <View style={styles.summaryItem}>
-                          <Text style={styles.summaryValue}>{totalCountries}</Text>
-                          <Text style={styles.summaryLabel}>pays explorés</Text>
-                        </View>
-
-                        <View style={styles.divider} />
-
-                        <View style={styles.summaryItem}>
-                          <Text style={styles.summaryValue}>{cats.length}</Text>
-                          <Text style={styles.summaryLabel}>chats</Text>
-                        </View>
-                      </View>
+                      <TouchableOpacity
+                          onPress={() => setShowStats(false)}
+                          style={styles.statsCloseBtn}
+                      >
+                        <Text style={styles.statsCloseText}>✕</Text>
+                      </TouchableOpacity>
                     </View>
 
-                    <SectionTitle emoji="🏙️">Classement des villes</SectionTitle>
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.statsScroll}
+                    >
+                      <View style={styles.summaryCard}>
+                        <View style={styles.summaryRow}>
+                          <View style={styles.summaryItem}>
+                            <Text style={styles.summaryValue}>{totalCities}</Text>
+                            <Text style={styles.summaryLabel}>villes découvertes</Text>
+                          </View>
 
-                    {cityStats.length > 0 ? (
-                        <View style={styles.rankCard}>
-                          {cityStats.slice(0, 7).map((city, i) => (
-                              <View key={city.name} style={styles.rankRow}>
-                                <Text style={styles.rankNumber}>
-                                  {i === 0
-                                      ? "🥇"
-                                      : i === 1
-                                          ? "🥈"
-                                          : i === 2
-                                              ? "🥉"
-                                              : `#${i + 1}`}
-                                </Text>
+                          <View style={styles.divider} />
 
-                                <Text style={styles.rankName} numberOfLines={1}>
-                                  {city.name}
-                                </Text>
+                          <View style={styles.summaryItem}>
+                            <Text style={styles.summaryValue}>{totalCountries}</Text>
+                            <Text style={styles.summaryLabel}>pays explorés</Text>
+                          </View>
 
-                                <Text style={styles.rankCount}>
-                                  {city.catCount} chat{city.catCount > 1 ? "s" : ""}
-                                </Text>
-                              </View>
-                          ))}
+                          <View style={styles.divider} />
+
+                          <View style={styles.summaryItem}>
+                            <Text style={styles.summaryValue}>{cats.length}</Text>
+                            <Text style={styles.summaryLabel}>chats</Text>
+                          </View>
                         </View>
-                    ) : (
-                        <View style={styles.emptyCard}>
-                          <Text style={styles.emptyText}>Aucune ville enregistrée</Text>
-                        </View>
-                    )}
+                      </View>
 
-                    <SectionTitle emoji="🌍">Pays</SectionTitle>
+                      <SectionTitle emoji="🏙️">Classement des villes</SectionTitle>
 
-                    {countryStats.length > 0 ? (
-                        <View style={styles.rankCard}>
-                          {countryStats.map((country) => (
-                              <View key={country.name} style={styles.countryRow}>
-                                <Text style={styles.countryFlag}>{country.flag}</Text>
+                      {cityStats.length > 0 ? (
+                          <View style={styles.rankCard}>
+                            {cityStats.slice(0, 7).map((city, i) => (
+                                <View key={city.name} style={styles.rankRow}>
+                                  <Text style={styles.rankNumber}>
+                                    {i === 0
+                                        ? "🥇"
+                                        : i === 1
+                                            ? "🥈"
+                                            : i === 2
+                                                ? "🥉"
+                                                : `#${i + 1}`}
+                                  </Text>
 
-                                <Text style={styles.countryName}>{country.name}</Text>
+                                  <Text style={styles.rankName} numberOfLines={1}>
+                                    {city.name}
+                                  </Text>
 
-                                <Text style={styles.countryCount}>
-                                  {country.cityCount} ville
-                                  {country.cityCount > 1 ? "s" : ""} ·{" "}
-                                  {country.catCount} chat
-                                  {country.catCount > 1 ? "s" : ""}
-                                </Text>
-                              </View>
-                          ))}
-                        </View>
-                    ) : (
-                        <View style={styles.emptyCard}>
-                          <Text style={styles.emptyText}>
-                            Aucune donnée de pays disponible
-                          </Text>
-                        </View>
-                    )}
-                  </ScrollView>
+                                  <Text style={styles.rankCount}>
+                                    {city.catCount} chat{city.catCount > 1 ? "s" : ""}
+                                  </Text>
+                                </View>
+                            ))}
+                          </View>
+                      ) : (
+                          <View style={styles.emptyCard}>
+                            <Text style={styles.emptyText}>Aucune ville enregistrée</Text>
+                          </View>
+                      )}
+
+                      <SectionTitle emoji="🌍">Pays</SectionTitle>
+
+                      {countryStats.length > 0 ? (
+                          <View style={styles.rankCard}>
+                            {countryStats.map((country) => (
+                                <View key={country.name} style={styles.countryRow}>
+                                  <Text style={styles.countryFlag}>{country.flag}</Text>
+
+                                  <Text style={styles.countryName}>{country.name}</Text>
+
+                                  <Text style={styles.countryCount}>
+                                    {country.cityCount} ville
+                                    {country.cityCount > 1 ? "s" : ""} ·{" "}
+                                    {country.catCount} chat
+                                    {country.catCount > 1 ? "s" : ""}
+                                  </Text>
+                                </View>
+                            ))}
+                          </View>
+                      ) : (
+                          <View style={styles.emptyCard}>
+                            <Text style={styles.emptyText}>
+                              Aucune donnée de pays disponible
+                            </Text>
+                          </View>
+                      )}
+                    </ScrollView>
+                  </View>
                 </View>
-              </View>
-          )}
+            )}
+
+            <MapTutorial
+              visible={showTutorial}
+              onDismiss={() => setShowTutorial(false)}
+            />
+          </View>
         </View>
       </View>
   );
@@ -398,16 +477,35 @@ const styles = StyleSheet.create({
     fontSize: 22,
   },
 
+  mapShadow: {
+    flex: 1,
+    marginHorizontal: 10,
+    borderRadius: 24,
+    backgroundColor: "#E7D7B8",
+
+    shadowColor: "#2A2521",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+
+    elevation: 16,
+  },
+
   mapWrapper: {
     flex: 1,
     position: "relative",
-    marginRight: 10,
-    borderTopRightRadius: 22,
-    borderBottomRightRadius: 22,
+
+    borderRadius: 24,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#D8C9A8",
     backgroundColor: "#E7D7B8",
+
+    borderWidth: 1.5,
+    borderColor: "#D7C8A6",
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 1,
   },
 
   illustratedMap: {
@@ -428,70 +526,130 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 15,
+    transform: [
+      { translateY: -2 },
+    ]
   },
 
   catPinOne: {
-    top: "18%",
-    right: "16%",
+    top: "16%",
+    right: "13%",
   },
 
   catPinTwo: {
-    top: "40%",
-    left: "48%",
+    top: "39%",
+    left: "47%",
   },
 
   catPinThree: {
-    bottom: "34%",
-    left: "22%",
+    bottom: "30%",
+    left: "18%",
   },
 
   catPinFour: {
-    bottom: "25%",
-    left: "44%",
+    top: "56%",
+    left: "28%",
   },
 
-  catAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#F8F0DC",
-    borderWidth: 3,
-    borderColor: "#FFF7E8",
+  catPinShadow: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+
     alignItems: "center",
     justifyContent: "center",
 
-    shadowColor: "#2A2521",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    shadowColor: "#2D241D",
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+
+    elevation: 6,
+  },
+
+  catAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+
+    backgroundColor: "#c4bf8f",
+
+    borderWidth: 3,
+    borderColor: "#F5E9D4",
+
+    alignItems: "center",
+    justifyContent: "center",
+
   },
 
   catEmoji: {
-    fontSize: 26,
+    fontSize: 24,
+  },
+
+  catPinImage: {
+    width: 40,
+    height: 40,
+  },
+
+  catPinPoint: {
+    width: 16,
+    height: 16,
+    position: "absolute",
+    top: 45,
+
+    backgroundColor: "#F5E9D4",
+
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#F5E9D4",
+
+    transform: [
+      { rotate: "45deg" },
+    ],
+
+    marginTop: -8,
+
+    zIndex: -1,
   },
 
   catPinCount: {
     position: "absolute",
+
     right: -6,
     bottom: -4,
 
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
 
-    backgroundColor: "#F8F0DC",
-    borderWidth: 2,
-    borderColor: "#FFF7E8",
+    borderRadius: 11,
 
-    textAlign: "center",
-    lineHeight: 20,
+    backgroundColor: "#FFF6E6",
 
-    color: "#2D241D",
-    fontSize: 13,
+    borderWidth: 1,
+    borderColor: "#E6D4B2",
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    shadowColor: "#2D241D",
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
+    elevation: 4,
+  },
+
+  catPinCountText: {
+    fontSize: 12,
+    lineHeight: 14,
+    color: "#3A2E24",
     fontFamily: "CormorantGaramond_700Bold",
-
-    overflow: "hidden",
   },
 
   currentPosition: {
@@ -513,10 +671,6 @@ const styles = StyleSheet.create({
     zIndex: 12,
   },
 
-  currentPositionIcon: {
-    fontSize: 30,
-  },
-
   compass: {
     position: "absolute",
     right: 18,
@@ -526,22 +680,17 @@ const styles = StyleSheet.create({
     height: 74,
     borderRadius: 37,
 
-    backgroundColor: "rgba(248, 240, 220, 0.9)",
-    borderWidth: 1,
-    borderColor: "#D8C6A3",
-
+    zIndex: 55,
+    opacity: 1,
     alignItems: "center",
     justifyContent: "center",
-
-    shadowColor: "#2A2521",
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 8,
   },
 
   compassIcon: {
     fontSize: 42,
+    zIndex: 55,
+    opacity: 1,
+    position: "relative",
   },
 
   statsOverlay: {
@@ -732,122 +881,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#5D5144",
     fontFamily: "CormorantGaramond_600SemiBold",
-  },
-
-  campActions: {
-    position: "absolute",
-    top: "37%",
-    left: "35%",
-    width: 150,
-    height: 150,
-    zIndex: 40,
-  },
-  campActions: {
-    position: "absolute",
-    top: "47%",
-    left: "48%",
-    width: 1,
-    height: 1,
-    zIndex: 45,
-  },
-
-  campAction: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 9,
-  },
-
-  campActionPhoto: {
-    top: -92,
-    left: -92,
-  },
-
-  campActionCats: {
-    top: -92,
-    left: 16,
-  },
-
-  campIconWrapper: {
-    width: 75,
-    height: 75,
-
-    borderRadius: 43,
-
-    backgroundColor: "rgba(248, 240, 220, 0.94)",
-
-    borderWidth: 3,
-    borderColor: "#E8D4A8",
-
-    alignItems: "center",
-    justifyContent: "center",
-
-    shadowColor: "#2A2521",
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
-    elevation: 8,
-  },
-
-  campIcon: {
-    width: 46,
-    height: 46,
-  },
-
-  campTextWrapper: {
-    marginTop: -10,
-
-    minWidth: 85,
-    height: 34,
-
-    paddingHorizontal: 18,
-
-    borderRadius: 17,
-
-    backgroundColor: "#FFF5E2",
-
-    borderWidth: 2,
-    borderColor: "#D9C7A2",
-
-    justifyContent: "center",
-    alignItems: "center",
-
-    shadowColor: "#2A2521",
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-
-    elevation: 4,
-  },
-
-  campActionText: {
-    color: "#3A2D23",
-    fontSize: 18,
-
-    fontFamily: "CormorantGaramond_700Bold",
-  },
-
-  campClose: {
-    position: "absolute",
-    top: 70,
-    left: -22,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#355C3C",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "#F8F0DC",
   },
 });

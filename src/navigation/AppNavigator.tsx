@@ -16,6 +16,7 @@ import { LocalStorage } from "../services/storage";
 import { getMode } from "../services/mode";
 import { useAuth } from "../hooks/useAuth";
 
+import { CaptureCatScreen } from "../screens/CaptureCatScreen";
 import { HomeMapScreen } from "../screens/HomeMapScreen";
 import { CatDetailScreen } from "../screens/CatDetailScreen";
 import { ActivityFeedScreen } from "../screens/ActivityFeedScreen";
@@ -254,6 +255,12 @@ export function AppNavigator() {
               name="CatDetail"
               component={CatDetailScreen}
               options={{ title: "Fiche Chat" }}
+          />
+
+          <Stack.Screen
+              name="CaptureCat"
+              component={CaptureCatScreen}
+              options={{ title: "Nouvelle Observation", headerShown: false }}
           />
 
           <Stack.Screen

@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   container: {
     position: "absolute",
     bottom: 24,
-    left: 8,
+    left: 16,
     right: 18,
 
     minHeight: 82,

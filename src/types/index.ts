@@ -148,7 +148,7 @@ export type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
   CatDetail: { catId: string };
-  CaptureCat: { latitude: number; longitude: number };
+  CaptureCat: { latitude?: number; longitude?: number };
   Leaderboard: undefined;
   BugReport: undefined;
   Badges: undefined;

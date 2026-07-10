@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   BADGES: "@catquest_badges",
   USER_BADGES: "@catquest_user_badges",
   USERNAME: "@catquest_username",
+  USER_AVATAR_URL: "@catquest_user_avatar_url",
   DELETED_CAT_IDS: "@catquest_deleted_cat_ids",
   ACTIVITIES: "@catquest_activities",
   SIGHTING_LIKES: "@catquest_sighting_likes",
@@ -147,6 +148,18 @@ export const LocalStorage = {
 
   async setUsername(name: string): Promise<void> {
     await AsyncStorage.setItem(STORAGE_KEYS.USERNAME, name);
+  },
+
+  async getUserAvatarUrl(): Promise<string | null> {
+    return AsyncStorage.getItem(STORAGE_KEYS.USER_AVATAR_URL);
+  },
+
+  async setUserAvatarUrl(url: string | null): Promise<void> {
+    if (url) {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_AVATAR_URL, url);
+    } else {
+      await AsyncStorage.removeItem(STORAGE_KEYS.USER_AVATAR_URL);
+    }
   },
 
   async addDeletedCatId(catId: string): Promise<void> {

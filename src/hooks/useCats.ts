@@ -41,6 +41,54 @@ export function useCats() {
   const mode = getMode();
   const isFirebase = mode === "firebase";
 
+  const recordActivity = useCallback(
+    async (
+      type: Activity["type"],
+      catId?: string,
+      catName?: string,
+      userId?: string,
+      extra?: { title?: string; icon?: string; reward_xp?: number; location?: string }
+    ) => {
+      const resolvedUserId = userId || "mock_user";
+      const username = (await LocalStorage.getUsername()) || "CatExplorer";
+      let avatar_url = await LocalStorage.getUserAvatarUrl();
+
+      if (!avatar_url && isFirebase) {
+        try {
+          const { auth } = await import("../services/firebase");
+          avatar_url = auth?.currentUser?.photoURL || null;
+        } catch {
+          // ignore
+        }
+      }
+
+      const activity: Activity = {
+        id: uid(),
+        user_id: resolvedUserId,
+        username,
+        avatar_url: avatar_url || undefined,
+        type,
+        cat_id: catId,
+        cat_name: catName,
+        created_at: new Date().toISOString(),
+        ...extra,
+      };
+
+      try {
+        if (isFirebase) {
+          await ActivityCloud.add(activity);
+        }
+      } catch (e) {
+        console.warn("Échec de l'enregistrement de l'activité dans le cloud:", e);
+      }
+      await LocalStorage.addActivity(activity).catch(() => {});
+      setActivities((prev) =>
+        prev.find((a) => a.id === activity.id) ? prev : [activity, ...prev]
+      );
+    },
+    [isFirebase]
+  );
+
   const checkBadges = useCallback(
     async (userId: string, alreadyEarnedIds?: string[]) => {
       let allCats: Cat[] = [];
@@ -158,6 +206,11 @@ export function useCats() {
           };
           newBadges.push(ub);
 
+          await recordActivity("badge_earned", undefined, undefined, userId, {
+            title: badge.name,
+            icon: badge.icon,
+          });
+
           try {
             if (isFirebase) {
               await BadgeCloud.saveBadge(ub);
@@ -185,7 +238,7 @@ export function useCats() {
 
       return { newBadges, removedBadges };
     },
-    [isFirebase]
+    [isFirebase, recordActivity]
   );
 
   const handleQuestComplete = useCallback(
@@ -208,7 +261,14 @@ export function useCats() {
       activeQuests = evaluateOneTimeQuests(
         activeQuests,
         { cats, sightings, comments: sightingComments },
-        (quest) => handleQuestComplete(quest, userId)
+        (quest) => {
+          handleQuestComplete(quest, userId);
+          recordActivity("quest_completed", undefined, undefined, userId, {
+            title: quest.title || quest.description,
+            icon: "🏆",
+            reward_xp: quest.reward_xp,
+          }).catch(() => {});
+        }
       );
 
       // Evaluate daily/weekly quests for this action
@@ -220,6 +280,11 @@ export function useCats() {
 
       for (const quest of completedQuests) {
         await handleQuestComplete(quest, userId);
+        await recordActivity("quest_completed", undefined, undefined, userId, {
+          title: quest.title || quest.description,
+          icon: "🏆",
+          reward_xp: quest.reward_xp,
+        });
       }
 
       const finalQuests = completedQuests.length > 0
@@ -232,7 +297,7 @@ export function useCats() {
       await LocalStorage.saveQuests(finalQuests);
       setQuests(finalQuests);
     },
-    [cats, sightings, sightingComments, handleQuestComplete]
+    [cats, sightings, sightingComments, handleQuestComplete, recordActivity]
   );
 
   const loadData = useCallback(async () => {
@@ -438,36 +503,8 @@ export function useCats() {
     loadData();
   }, [loadData]);
 
-  const recordActivity = useCallback(
-    async (type: Activity["type"], catId: string, catName: string, userId: string) => {
-      const username = (await LocalStorage.getUsername()) || "CatExplorer";
-      const activity: Activity = {
-        id: uid(),
-        user_id: userId,
-        username,
-        type,
-        cat_id: catId,
-        cat_name: catName,
-        created_at: new Date().toISOString(),
-      };
-
-      try {
-        if (isFirebase) {
-          await ActivityCloud.add(activity);
-        }
-      } catch {
-        // fallback: local only
-      }
-      await LocalStorage.addActivity(activity).catch(() => {});
-      setActivities((prev) =>
-        prev.find((a) => a.id === activity.id) ? prev : [activity, ...prev]
-      );
-    },
-    [isFirebase]
-  );
-
   const addCat = useCallback(
-    async (cat: Omit<Cat, "id" | "created_at">) => {
+    async (cat: Omit<Cat, "id" | "created_at">, location?: string) => {
       const newCat: Cat = {
         ...cat,
         id: uid(),
@@ -485,7 +522,7 @@ export function useCats() {
           await updateStreak(newCat.user_id).catch(() => {});
           setCloudStatus("cloud");
           await checkQuestProgress("add_cat", { userId: newCat.user_id, catColor: cat.color }).catch(() => {});
-          await recordActivity("discovered", cloudCat.id, cloudCat.name || "Chat inconnu", newCat.user_id);
+          await recordActivity("discovered", cloudCat.id, cloudCat.name || "Chat inconnu", newCat.user_id, { location });
           return cloudCat;
         } else {
           await LocalStorage.saveCat(newCat);
@@ -502,7 +539,7 @@ export function useCats() {
       await checkBadges(newCat.user_id).catch(() => {});
       await updateStreak(newCat.user_id).catch(() => {});
       await checkQuestProgress("add_cat", { userId: newCat.user_id, catColor: cat.color }).catch(() => {});
-      await recordActivity("discovered", newCat.id, newCat.name || "Chat inconnu", newCat.user_id);
+      await recordActivity("discovered", newCat.id, newCat.name || "Chat inconnu", newCat.user_id, { location });
       return newCat;
     },
     [isFirebase, checkBadges, recordActivity, checkQuestProgress]
@@ -550,7 +587,9 @@ export function useCats() {
           setCloudStatus("cloud");
           const sightedCat = cats.find((c) => c.id === cloudSighting.cat_id);
           if (sightedCat) {
-            await recordActivity("spotted", sightedCat.id, sightedCat.name || "Chat inconnu", cloudSighting.user_id);
+            await recordActivity("spotted", sightedCat.id, sightedCat.name || "Chat inconnu", cloudSighting.user_id, {
+              location: cloudSighting.location_label,
+            });
           }
           await checkBadges(cloudSighting.user_id);
           await updateStreak(cloudSighting.user_id).catch(() => {});
@@ -586,7 +625,9 @@ export function useCats() {
       );
       const sightedCat = cats.find((c) => c.id === newSighting.cat_id);
       if (sightedCat) {
-        await recordActivity("spotted", sightedCat.id, sightedCat.name || "Chat inconnu", newSighting.user_id);
+        await recordActivity("spotted", sightedCat.id, sightedCat.name || "Chat inconnu", newSighting.user_id, {
+          location: newSighting.location_label,
+        });
       }
       await checkBadges(newSighting.user_id).catch(() => {});
       await updateStreak(newSighting.user_id).catch(() => {});

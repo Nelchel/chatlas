@@ -210,7 +210,7 @@ export function CaptureCatScreen() {
       return;
     }
 
-    setSubmitting(true);
+      setSubmitting(true);
     try {
       let pos = position;
       if (!pos) {
@@ -219,6 +219,7 @@ export function CaptureCatScreen() {
       }
 
       const catName = name.trim() || await generateCatName(color, pos.latitude, pos.longitude);
+      const locationLabel = await reverseGeocodeLocation(pos.latitude, pos.longitude);
       const cat = await addCat({
         user_id: user.id,
         name: catName,
@@ -231,7 +232,7 @@ export function CaptureCatScreen() {
         sociability: sociability || undefined,
         behaviors: Object.values(behaviors).some(Boolean) ? behaviors : undefined,
         note: note.trim() || undefined,
-      });
+      }, locationLabel || undefined);
 
       await addSighting({
         cat_id: cat.id,
@@ -240,6 +241,7 @@ export function CaptureCatScreen() {
         longitude: pos.longitude,
         photo_url: photo,
         notes: note.trim() || undefined,
+        location_label: locationLabel || undefined,
         sighted_at: new Date().toISOString(),
       });
 

@@ -90,9 +90,14 @@ export interface Activity {
   id: string;
   user_id: string;
   username: string;
-  type: "discovered" | "spotted";
-  cat_id: string;
-  cat_name: string;
+  avatar_url?: string;
+  type: "discovered" | "spotted" | "badge_earned" | "quest_completed";
+  cat_id?: string;
+  cat_name?: string;
+  title?: string;
+  icon?: string;
+  reward_xp?: number;
+  location?: string;
   created_at: string;
 }
 

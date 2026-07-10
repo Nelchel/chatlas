@@ -62,6 +62,7 @@ export function useAuth() {
       if (username && username !== (stored || "")) {
         await LocalStorage.setUsername(username);
       }
+      await LocalStorage.setUserAvatarUrl(avatar_url ?? null);
 
       return {
         id: firebaseUser.uid,
@@ -137,6 +138,7 @@ export function useAuth() {
     await LocalStorage.clearUserData();
     await LocalStorage.setRaw("auth_setup_complete", "false").catch(() => {});
     await LocalStorage.setUsername("").catch(() => {});
+    await LocalStorage.setUserAvatarUrl(null).catch(() => {});
     if (userId) {
       await clearQuestXP(userId).catch(() => {});
     }

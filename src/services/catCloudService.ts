@@ -185,11 +185,11 @@ export const SightingCloud = {
       const uploaded = await uploadSightingPhoto(localPhotoUri, sighting.user_id, sighting.id);
       if (uploaded) photoUrl = uploaded;
     }
-    const final = { ...sighting, photo_url: photoUrl };
     const locationLabel = await reverseGeocodeLocation(sighting.latitude, sighting.longitude);
+    const final = { ...sighting, photo_url: photoUrl, location_label: locationLabel || undefined };
     const docRef = doc(_db(), "sightings", sighting.id);
     console.log("SightingCloud.create: writing", sighting.id);
-    await setDoc(docRef, sightingToDoc(final, locationLabel || undefined));
+    await setDoc(docRef, sightingToDoc(final, final.location_label));
     console.log("SightingCloud.create: success", sighting.id);
     return final;
   },
@@ -278,24 +278,37 @@ export const ActivityCloud = {
         id: (data.id as string) || "",
         user_id: (data.userId as string) || "",
         username: (data.username as string) || "",
+        avatar_url: (data.avatarUrl as string) || undefined,
         type: (data.type as Activity["type"]) || "spotted",
-        cat_id: (data.catId as string) || "",
-        cat_name: (data.catName as string) || "",
+        cat_id: (data.catId as string) || undefined,
+        cat_name: (data.catName as string) || undefined,
+        title: (data.title as string) || undefined,
+        icon: (data.icon as string) || undefined,
+        reward_xp: (data.rewardXp as number) || undefined,
+        location: (data.location as string) || undefined,
         created_at: toISO(data.createdAt),
       };
     });
   },
 
   async add(activity: Activity): Promise<void> {
-    await setDoc(doc(_db(), "activities", activity.id), {
+    const docData: Record<string, unknown> = {
       id: activity.id,
       userId: activity.user_id,
       username: activity.username,
       type: activity.type,
-      catId: activity.cat_id,
-      catName: activity.cat_name,
       createdAt: Timestamp.fromDate(new Date(activity.created_at)),
-    });
+    };
+
+    if (activity.avatar_url) docData.avatarUrl = activity.avatar_url;
+    if (activity.cat_id) docData.catId = activity.cat_id;
+    if (activity.cat_name) docData.catName = activity.cat_name;
+    if (activity.title) docData.title = activity.title;
+    if (activity.icon) docData.icon = activity.icon;
+    if (activity.reward_xp !== undefined) docData.rewardXp = activity.reward_xp;
+    if (activity.location) docData.location = activity.location;
+
+    await setDoc(doc(_db(), "activities", activity.id), docData);
   },
 };
 

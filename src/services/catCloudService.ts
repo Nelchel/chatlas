@@ -10,6 +10,7 @@ import {
   orderBy,
   Timestamp,
   writeBatch,
+  runTransaction,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { uploadCatPhoto, uploadCatPhotoById, uploadSightingPhoto } from "./supabaseStorage";
@@ -29,6 +30,7 @@ function toISO(v: unknown): string {
 function catToDoc(cat: Cat): Record<string, unknown> {
   return {
     id: cat.id,
+    number: cat.number ?? null,
     createdBy: cat.user_id,
     nickname: cat.name || "",
     color: cat.color || "",
@@ -49,6 +51,7 @@ function docToCat(data: Record<string, unknown>): Cat {
   const photos = (data.photos as string[]) || (photoUrl ? [photoUrl] : []);
   return {
     id: (data.id as string) || "",
+    number: typeof data.number === "number" ? data.number : undefined,
     user_id: (data.createdBy as string) || "",
     name: (data.nickname as string) || undefined,
     photo_url: photoUrl,
@@ -129,11 +132,28 @@ export const CatCloud = {
         photos = [uploaded];
       }
     }
-    const finalCat = { ...cat, photo_url: photoUrl, photos };
+
+    const counterRef = doc(_db(), "counters", "cats");
     const docRef = doc(_db(), "cats", cat.id);
-    console.log("CatCloud.create: writing cat", cat.id, "photo_url:", photoUrl.substring(0, 50));
+
+    let assignedNumber: number;
+    try {
+      assignedNumber = await runTransaction(_db(), async (transaction) => {
+        const counterSnap = await transaction.get(counterRef);
+        const current = (counterSnap.exists() ? (counterSnap.data().count as number) : 0);
+        const next = current + 1;
+        transaction.set(counterRef, { count: next }, { merge: true });
+        return next;
+      });
+    } catch (txErr) {
+      console.error("Counter transaction failed:", txErr);
+      assignedNumber = 0;
+    }
+
+    const finalCat: Cat = { ...cat, photo_url: photoUrl, photos, number: assignedNumber || undefined };
+    console.log("CatCloud.create: writing cat", cat.id, "photo_url:", photoUrl.substring(0, 50), "number:", assignedNumber);
     await setDoc(docRef, catToDoc(finalCat));
-    console.log("CatCloud.create: success", cat.id);
+    console.log("CatCloud.create: success", cat.id, "number:", assignedNumber);
     return finalCat;
   },
 

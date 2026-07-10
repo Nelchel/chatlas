@@ -111,9 +111,10 @@ export function CatDetailScreen() {
   const count = catSightings.length;
 
   const getRarity = () => {
-    if (count <= 2) return { stars: "⭐⭐", label: "Rare" };
-    if (count <= 6) return { stars: "⭐⭐⭐", label: "Commun" };
-    return { stars: "⭐⭐⭐⭐⭐", label: "Fréquent" };
+    if (count >= 16) return { stars: "⭐", label: "Commun" };
+    if (count >= 7) return { stars: "⭐⭐", label: "Rare" };
+    if (count >= 3) return { stars: "⭐⭐⭐⭐", label: "Épique" };
+    return { stars: "⭐⭐⭐⭐⭐", label: "Légendaire" };
   };
 
   const rarity = getRarity();

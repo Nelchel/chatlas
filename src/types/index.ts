@@ -1,5 +1,6 @@
 export interface Cat {
   id: string;
+  number?: number;
   user_id: string;
   name?: string;
   photo_url: string;

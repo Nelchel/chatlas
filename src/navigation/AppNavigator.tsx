@@ -254,7 +254,7 @@ export function AppNavigator() {
           <Stack.Screen
               name="CatDetail"
               component={CatDetailScreen}
-              options={{ title: "Fiche Chat" }}
+              options={{ headerShown: false }}
           />
 
           <Stack.Screen
